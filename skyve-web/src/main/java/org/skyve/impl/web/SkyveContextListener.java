@@ -71,6 +71,10 @@ import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.SessionCookieConfig;
 
+/**
+ * Servlet context listener that initializes and tears down Skyve runtime services
+ * and reads application configuration from JSON.
+ */
 public class SkyveContextListener implements ServletContextListener {
 	private static final String DEV_LOGIN_FILTER_CLASS_NAME = DevLoginFilter.class.getName();
 	private static final String RESPONSE_HEADER_FILTER_CLASS_NAME = ResponseHeaderFilter.class.getName();
@@ -78,6 +82,12 @@ public class SkyveContextListener implements ServletContextListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SkyveContextListener.class);
 
+	/**
+	 * Initialize Skyve services, caches, and per-customer startup hooks when the
+	 * web application context is created.
+	 *
+	 * @param evt The servlet context event.
+	 */
 	@Override
 	public void contextInitialized(ServletContextEvent evt) {
 		ServletContext ctx = evt.getServletContext();
@@ -164,6 +174,12 @@ public class SkyveContextListener implements ServletContextListener {
 		}
 	}
 	
+	/**
+	 * Populate {@link UtilImpl} static configuration from the servlet context and
+	 * JSON configuration files.
+	 *
+	 * @param ctx The servlet context used to resolve init params and real paths.
+	 */
 	@SuppressWarnings("unchecked")
 	public static void populateUtilImpl(ServletContext ctx) {
 		UtilImpl.SKYVE_CONTEXT_REAL_PATH = ctx.getRealPath("/");
@@ -274,6 +290,7 @@ public class SkyveContextListener implements ServletContextListener {
 		UtilImpl.CONTENT_JDBC_SERVER_ARGS = getString("content", "serverArgs", content, false);
 		UtilImpl.CONTENT_REST_SERVER_URL = getString("content", "serverUrl", content, false);
 		UtilImpl.CONTENT_FILE_STORAGE = getBoolean("content", "fileStorage", content);
+		UtilImpl.CONTENT_FILE_SUFFIXES = getBoolean("content", "fileSuffixes", content);
 
 		// Backup settings
 		Map<String, Object> backup = getObject(null, "backup", properties, false);
@@ -882,7 +899,13 @@ public class SkyveContextListener implements ServletContextListener {
         configureArchiveProperties(properties);
 	}
 
-    private static void configureArchiveProperties(Map<String, Object> properties) {
+	/**
+	 * Read and validate archive configuration settings from the JSON configuration
+	 * map and apply them to {@link UtilImpl}.
+	 *
+	 * @param properties The root configuration map.
+	 */
+	private static void configureArchiveProperties(Map<String, Object> properties) {
         String archKey = "archive";
 
         Map<String, Object> archiveProps = getObject(null, archKey, properties, false);
@@ -983,6 +1006,15 @@ public class SkyveContextListener implements ServletContextListener {
 		}
 	}
 	
+	/**
+	 * Look up a configuration value and optionally enforce existence.
+	 *
+	 * @param prefix Optional configuration prefix for error messages.
+	 * @param key The key to look up.
+	 * @param properties The configuration map.
+	 * @param required Whether the key must exist.
+	 * @return The raw configuration value (may be null when not required).
+	 */
 	private static Object get(String prefix, String key, Map<String, Object> properties, boolean required) {
 		Object result = properties.get(key);
 		if (required && (result == null)) {
@@ -994,33 +1026,91 @@ public class SkyveContextListener implements ServletContextListener {
 		return result;
 	}
 
+	/**
+	 * Retrieve a required boolean configuration value.
+	 *
+	 * @param prefix Optional configuration prefix for error messages.
+	 * @param key The key to look up.
+	 * @param properties The configuration map.
+	 * @return The boolean value.
+	 */
 	private static boolean getBoolean(String prefix, String key, Map<String, Object> properties) {
 		Boolean result = (Boolean) get(prefix, key, properties, true);
 		return result.booleanValue();
 	}
 	
+	/**
+	 * Retrieve a required integer configuration value.
+	 *
+	 * @param prefix Optional configuration prefix for error messages.
+	 * @param key The key to look up.
+	 * @param properties The configuration map.
+	 * @return The integer value.
+	 */
 	private static int getInt(String prefix, String key, Map<String, Object> properties) {
 		return getNumber(prefix, key, properties, true).intValue();
 	}
 
+	/**
+	 * Retrieve a numeric configuration value.
+	 *
+	 * @param prefix Optional configuration prefix for error messages.
+	 * @param key The key to look up.
+	 * @param properties The configuration map.
+	 * @param required Whether the key must exist.
+	 * @return The numeric value (may be null when not required).
+	 */
 	private static Number getNumber(String prefix, String key, Map<String, Object> properties, boolean required) {
 		return (Number) get(prefix, key, properties, required);
 	}
 
+	/**
+	 * Retrieve a string configuration value.
+	 *
+	 * @param prefix Optional configuration prefix for error messages.
+	 * @param key The key to look up.
+	 * @param properties The configuration map.
+	 * @param required Whether the key must exist.
+	 * @return The string value (may be null when not required).
+	 */
 	private static String getString(String prefix, String key, Map<String, Object> properties, boolean required) {
 		return (String) get(prefix, key, properties, required);
 	}
 
+	/**
+	 * Retrieve a nested object configuration map.
+	 *
+	 * @param prefix Optional configuration prefix for error messages.
+	 * @param key The key to look up.
+	 * @param properties The configuration map.
+	 * @param required Whether the key must exist.
+	 * @return The nested map (may be null when not required).
+	 */
 	@SuppressWarnings("unchecked")
 	private static Map<String, Object> getObject(String prefix, String key, Map<String, Object> properties, boolean required) {
 		return (Map<String, Object>) get(prefix, key, properties, required);
 	}
 	
+	/**
+	 * Retrieve a list configuration value.
+	 *
+	 * @param prefix Optional configuration prefix for error messages.
+	 * @param key The key to look up.
+	 * @param properties The configuration map.
+	 * @param required Whether the key must exist.
+	 * @return The list value (may be null when not required).
+	 */
 	@SuppressWarnings("unchecked")
 	private static List<String> getList(String prefix, String key, Map<String, Object> properties, boolean required) {
 		return (List<String>) get(prefix, key, properties, required);
 	}
 	
+	/**
+	 * Shutdown Skyve services and notify per-customer shutdown hooks when the
+	 * web application context is destroyed.
+	 *
+	 * @param evt The servlet context event.
+	 */
 	@Override
 	public void contextDestroyed(ServletContextEvent evt) {
 		try {
@@ -1099,6 +1189,9 @@ public class SkyveContextListener implements ServletContextListener {
 		}
 	}
 	
+	/**
+	 * Clear the provided repository factory reference to release resources.
+	 */
 	@SuppressWarnings("null")
 	private static void clearRepositoryFactory() {
 		ProvidedRepositoryFactory.set(null);
@@ -1155,5 +1248,4 @@ public class SkyveContextListener implements ServletContextListener {
 			testFile.delete();
 		}
 	}
-	
 }

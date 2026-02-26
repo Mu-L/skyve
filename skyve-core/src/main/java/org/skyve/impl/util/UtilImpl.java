@@ -136,6 +136,10 @@ public class UtilImpl {
 	// Should the attachments be stored on the file system or inline.
 	public static boolean CONTENT_FILE_STORAGE = true;
 
+	// Should the attachments be stored on the file system with file suffixes or not.
+	// This makes the content files more accessible if on an accessible file system.
+	public static boolean CONTENT_FILE_SUFFIXES = false;
+
 	// The arguments to send to the JDBC TCP server when running the content management in server mode.
 	public static String CONTENT_JDBC_SERVER_ARGS = null;
 
@@ -742,6 +746,7 @@ public class UtilImpl {
     	CONTENT_GC_ELIGIBLE_AGE_MINUTES = 720;
     	STATE_EVICT_CRON = "0 37 0 1/1 * ? *";
     	CONTENT_FILE_STORAGE = true;
+    	CONTENT_FILE_SUFFIXES = false;
     	CONTENT_JDBC_SERVER_ARGS = null;
     	CONTENT_REST_SERVER_URL = null;
     	BACKUP_DIRECTORY = null;

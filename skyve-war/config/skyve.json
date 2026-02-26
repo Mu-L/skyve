@@ -36,7 +36,10 @@
 		// Age in minutes content must be to be eligible for collection
 		"gcEligibleAgeMinutes": 720,
 		// Attachments stored on file system or inline
-		"fileStorage": true
+		"fileStorage": true,
+		// Whether to add the file suffix to attachments stored on the file system
+		// This is required for some anti-virus software or for the folder structure to be visible and associated in the file system
+		"fileSuffixes": false
 	},
 	// Add-ins settings
 	"addins": {
