@@ -272,7 +272,6 @@ public final class OverridableDomainGenerator extends DomainGenerator {
 		Persistent persistent = document.getPersistent();
 		ExtensionStrategy strategy = (persistent == null) ? null : persistent.getStrategy();
 		boolean mapped = ExtensionStrategy.mapped.equals(strategy);
-		boolean coincident = ExtensionStrategy.coincident.equals(strategy);
 		Document baseDocument = (inherits != null) ? module.getDocument(null, inherits.getDocumentName()) : null;
 
 		if ((baseDocument != null) && baseDocument.isDynamic() && (! document.isDynamic())) {
@@ -280,7 +279,7 @@ public final class OverridableDomainGenerator extends DomainGenerator {
 		}
 		
 		if (persistent != null) {
-			if ((strategyToAssert != null) && (! mapped) && (! coincident) && (! strategyToAssert.equals(strategy))) {
+			if ((strategyToAssert != null) && (! mapped) && (! strategyToAssert.equals(strategy))) {
 				throw new MetaDataException("Document " + document.getName() +
 												((strategy == null) ? " has no extension strategy" : " uses extension strategy " + strategy) +
 												" which conflicts with other extensions in the hierarchy using strategy " + strategyToAssert);
@@ -349,7 +348,7 @@ public final class OverridableDomainGenerator extends DomainGenerator {
 										baseDocument,
 										(strategyToAssert != null) ? 
 											strategyToAssert : 
-											((ExtensionStrategy.mapped.equals(strategy) || ExtensionStrategy.coincident.equals(strategy)) ? null : strategy));
+											(ExtensionStrategy.mapped.equals(strategy) ? null : strategy));
 		}
 	}
 
@@ -981,9 +980,7 @@ public final class OverridableDomainGenerator extends DomainGenerator {
 			for (Document derivation : derivations.values()) {
 				Persistent derivationPersistent = derivation.getPersistent();
 				ExtensionStrategy derivationStrategy = (derivationPersistent == null) ? null : derivationPersistent.getStrategy();
-				if ((derivationStrategy == null) ||
-						ExtensionStrategy.mapped.equals(derivationStrategy) ||
-						ExtensionStrategy.coincident.equals(derivationStrategy)) {
+				if ((derivationStrategy == null) || ExtensionStrategy.mapped.equals(derivationStrategy)) {
 					Module derivedModule = repository.getModule(customer, derivation.getOwningModuleName());
 					generateORM(contents,
 									derivedModule,
@@ -1015,7 +1012,7 @@ public final class OverridableDomainGenerator extends DomainGenerator {
 			Persistent basePersistent = baseDocument.getPersistent();
 			if (basePersistent != null) {
 				ExtensionStrategy strategy = basePersistent.getStrategy();
-				if (ExtensionStrategy.mapped.equals(strategy) || ExtensionStrategy.coincident.equals(strategy)) {
+				if (ExtensionStrategy.mapped.equals(strategy)) {
 					Module baseModule = repository.getModule(customer, baseDocument.getOwningModuleName());
 					generateAttributeMappings(contents,
 												customer,

@@ -427,7 +427,7 @@ public interface ProvidedRepository extends CachedRepository {
 			Persistent inheritsPersistent = result.getPersistent();
 			if (inheritsPersistent != null) {
 				ExtensionStrategy strategy = inheritsPersistent.getStrategy();
-				if (ExtensionStrategy.mapped.equals(strategy) || ExtensionStrategy.coincident.equals(strategy)) {
+				if (ExtensionStrategy.mapped.equals(strategy)) {
 					Extends baseInherits = result.getExtends();
 					if (baseInherits != null) { // only recurse if we have a base document to recurse to
 						Module baseModule = getModule(customer, result.getOwningModuleName());
@@ -447,8 +447,7 @@ public interface ProvidedRepository extends CachedRepository {
 			}
 			else {
 				ExtensionStrategy strategy = persistent.getStrategy();
-				if (ExtensionStrategy.mapped.equals(strategy) ||
-						ExtensionStrategy.coincident.equals(strategy)) {
+				if (ExtensionStrategy.mapped.equals(strategy)) {
 					result = null;
 				}
 			}

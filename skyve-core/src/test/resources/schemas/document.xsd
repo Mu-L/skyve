@@ -674,7 +674,6 @@
       <xs:enumeration value="single"/>
       <xs:enumeration value="joined"/>
       <xs:enumeration value="mapped"/>
-      <xs:enumeration value="coincident"/>
     </xs:restriction>
   </xs:simpleType>
 

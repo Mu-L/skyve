@@ -27,8 +27,7 @@ public class Persistent extends NamedMetaData {
 	public static enum ExtensionStrategy {
 		single,
 		joined,
-		mapped,
-		coincident
+		mapped
 	}
 	
 	private String schema;
