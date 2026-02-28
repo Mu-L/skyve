@@ -166,4 +166,13 @@ public class Persistent extends NamedMetaData {
 
 		return result.toString();
 	}
+	
+	/**
+	 * Indicates if this document is polymorphically mapped, that is it is mapped without a persistent name.
+	 * This means that the document is mapped to the same tables as its child documents and requires different integrity checks.
+	 * @return true if this document is polymorphically mapped, otherwise false.
+	 */
+	public boolean isPolymorphicallyMapped() {
+		return (strategy == ExtensionStrategy.mapped) && (getName() == null);
+	}
 }

@@ -174,24 +174,10 @@ import jakarta.persistence.RollbackException;
  * @see DynamicPersistence
  */
 public abstract class AbstractHibernatePersistence extends AbstractPersistence {
-	/**
-	 * Serialisation identifier for this persistence implementation.
-	 */
 	private static final long serialVersionUID = -1813679859498468849L;
 
-	/**
-	 * General logger for persistence configuration and operational messages.
-	 */
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHibernatePersistence.class);
-	
-	/**
-	 * Logger for query tracing when enabled.
-	 */
     private static final Logger QUERY_LOGGER = Category.QUERY.logger();
-    
-    /**
-     * Logger for Bizlet lifecycle tracing when enabled.
-     */
     private static final Logger BIZLET_LOGGER = Category.BIZLET.logger();
 
     /**
@@ -761,7 +747,7 @@ t.printStackTrace();
 				Document document = module.getDocument(moduleCustomer, documentName);
 				if ((! document.isDynamic()) && // is not dynamic
 						document.isPersistable() && // is persistent document
-						(repository.findNearestPersistentSingleOrJoinedSuperDocument(moduleCustomer, module, document) == null) && // not a sub-class (which don't have filters)
+						(repository.findNearestPersistentSingleOrJoinedSuperDocument(moduleCustomer, module, document) == null) && // not an ORM sub-class (which don't have filters)
 						moduleName.equals(document.getOwningModuleName())) { // document belongs to this module
 					setFilters(document, scope);
 				}
@@ -785,7 +771,7 @@ t.printStackTrace();
 				Document document = module.getDocument(moduleCustomer, documentName);
 				if ((! document.isDynamic()) && // is not dynamic
 						(document.isPersistable()) && // is persistent document
-						(repository.findNearestPersistentSingleOrJoinedSuperDocument(moduleCustomer, module, document) == null) && // not a sub-class (which don't have filters)
+						(repository.findNearestPersistentSingleOrJoinedSuperDocument(moduleCustomer, module, document) == null) && // not an ORM sub-class (which don't have filters)
 						moduleName.equals(document.getOwningModuleName())) { // document belongs to this module
 					resetFilters(document);
 				}
@@ -816,7 +802,7 @@ t.printStackTrace();
 			tempFilterDocument = repository.findNearestPersistentSingleOrJoinedSuperDocument(moduleCustomer, 
 																								module,
 																								tempFilterDocument);
-			if (tempFilterDocument != null) {
+			if (tempFilterDocument != null) { // ORM Subclass
 				filterDocument = tempFilterDocument;
 			}
 		}
@@ -2507,8 +2493,8 @@ if (document.isDynamic()) return;
 						Document referenceDocument = referenceModule.getDocument(customer, documentName);
 						Persistent persistent = document.getPersistent();
 						if (persistent != null) {
-							if (ExtensionStrategy.mapped.equals(persistent.getStrategy())) {
-								checkMappedReference(bean, beansToBeCascaded, document, ref, modoc, referenceDocument);
+							if (persistent.isPolymorphicallyMapped()) {
+								checkPolymorphicallyMappedReference(bean, beansToBeCascaded, document, ref, modoc, referenceDocument);
 							}
 							else {
 								checkTypedReference(bean, beansToBeCascaded, document, ref, modoc, referenceDocument);
@@ -2560,7 +2546,7 @@ if (document.isDynamic()) return;
 										@Nonnull Document referenceDocument)
 	throws ReferentialConstraintViolationException {
 		Persistent persistent = referenceDocument.getPersistent();
-		if ((persistent != null) && ExtensionStrategy.mapped.equals(persistent.getStrategy())) {
+		if ((persistent != null) && persistent.isPolymorphicallyMapped()) {
 			// Find all implementations below the mapped and check these instead
 			Set<Document> derivations = new HashSet<>();
 			populateImmediateMapImplementingDerivations((CustomerImpl) user.getCustomer(), referenceDocument, derivations);
@@ -2662,20 +2648,20 @@ if (document.isDynamic()) return;
 	 * @param modoc Module/document identifier for the reference owner.
 	 * @param referenceDocument The document that holds the reference.
 	 */
-	private void checkMappedReference(@Nonnull PersistentBean bean, 
-										@Nonnull Map<String, Set<Bean>> beansToBeCascaded,
-										@Nonnull Document document,
-										@Nonnull ExportedReference ref,
-										@Nonnull String modoc,
-										@Nonnull Document referenceDocument) {
+	private void checkPolymorphicallyMappedReference(@Nonnull PersistentBean bean, 
+														@Nonnull Map<String, Set<Bean>> beansToBeCascaded,
+														@Nonnull Document document,
+														@Nonnull ExportedReference ref,
+														@Nonnull String modoc,
+														@Nonnull Document referenceDocument) {
 		Persistent persistent = referenceDocument.getPersistent();
 		if (persistent != null) {
-			if (ExtensionStrategy.mapped.equals(persistent.getStrategy())) {
+			if (persistent.isPolymorphicallyMapped()) {
 				// Find all implementations below the mapped and check these instead
 				Set<Document> derivations = new HashSet<>();
 				populateImmediateMapImplementingDerivations((CustomerImpl) user.getCustomer(), referenceDocument, derivations);
 				for (Document derivation : derivations) {
-					checkMappedReference(bean, beansToBeCascaded, document, ref, modoc, derivation);
+					checkPolymorphicallyMappedReference(bean, beansToBeCascaded, document, ref, modoc, derivation);
 				}
 			}
 			else {
@@ -3369,7 +3355,7 @@ public void doWorkOnConnection(Session session) {
 						String referencedDocumentName = association.getDocumentName();
 						Document referencedDocument = module.getDocument(customer, referencedDocumentName);
 						Persistent referencedPersistent = referencedDocument.getPersistent();
-						if ((referencedPersistent != null) && ExtensionStrategy.mapped.equals(referencedPersistent.getStrategy())) {
+						if ((referencedPersistent != null) && referencedPersistent.isPolymorphicallyMapped()) {
 							query.append(',').append(attributeName).append("_type=:").append(attributeName).append("_type");
 						}
 					}
@@ -3437,7 +3423,7 @@ public void doWorkOnConnection(Session session) {
 						String referencedDocumentName = association.getDocumentName();
 						Document referencedDocument = module.getDocument(customer, referencedDocumentName);
 						Persistent referencedPersistent = referencedDocument.getPersistent();
-						if ((referencedPersistent != null) && ExtensionStrategy.mapped.equals(referencedPersistent.getStrategy())) {
+						if ((referencedPersistent != null) && referencedPersistent.isPolymorphicallyMapped()) {
 							columns.append(',').append(attributeName).append("_type");
 							values.append(",:").append(attributeName).append("_type");
 						}
@@ -3506,7 +3492,7 @@ public void doWorkOnConnection(Session session) {
 						String referencedDocumentName = association.getDocumentName();
 						Document referencedDocument = module.getDocument(customer, referencedDocumentName);
 						Persistent referencedPersistent = referencedDocument.getPersistent();
-						if ((referencedPersistent != null) && ExtensionStrategy.mapped.equals(referencedPersistent.getStrategy())) {
+						if ((referencedPersistent != null) && referencedPersistent.isPolymorphicallyMapped()) {
 							columnName = new StringBuilder(64).append(attributeName).append("_type").toString();
 							Bean referencedBean = (Bean) BindUtil.get(bean, attributeName);
 							String value = null;

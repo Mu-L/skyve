@@ -181,7 +181,7 @@ class Table {
 						}
 						else {
 							Persistent referencedPersistent = referencedDocument.getPersistent();
-							if ((referencedPersistent != null) && ExtensionStrategy.mapped.equals(referencedPersistent.getStrategy())) {
+							if ((referencedPersistent != null) && referencedPersistent.isPolymorphicallyMapped()) {
 								fields.put(attributeName + "_type", TEXT);
 							}
 							
