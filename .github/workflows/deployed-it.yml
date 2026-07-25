@@ -24,21 +24,23 @@ jobs:
       pull-requests: write
     env:
       SKYVE_DEPLOYED_IT_TEST: ${{ inputs['test-class'] }}
-      SKYVE_DEPLOYED_IT_RUNTIME_DIR: ${{ runner.temp }}/skyve-wildfly
-      SKYVE_DEPLOYED_IT_CONFIG_DIR: ${{ runner.temp }}/skyve-config
-      SKYVE_DEPLOYED_IT_CONTENT_DIR: ${{ runner.temp }}/skyve-content
-      SKYVE_DEPLOYED_IT_DATABASE_PATH: ${{ runner.temp }}/skyve-database/skyve
       SKYVE_DEPLOYED_IT_BASE_URL: http://127.0.0.1:8080/skyve/
       SKYVE_DEPLOYED_IT_USERNAME: deployed_it
 
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up JDK 17
-        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           java-version: '17'
           distribution: temurin
           cache: maven
+      - name: Configure isolated paths
+        run: |
+          echo "SKYVE_DEPLOYED_IT_RUNTIME_DIR=$RUNNER_TEMP/skyve-wildfly" >> "$GITHUB_ENV"
+          echo "SKYVE_DEPLOYED_IT_CONFIG_DIR=$RUNNER_TEMP/skyve-config" >> "$GITHUB_ENV"
+          echo "SKYVE_DEPLOYED_IT_CONTENT_DIR=$RUNNER_TEMP/skyve-content" >> "$GITHUB_ENV"
+          echo "SKYVE_DEPLOYED_IT_DATABASE_PATH=$RUNNER_TEMP/skyve-database/skyve" >> "$GITHUB_ENV"
       - name: Verify headless browser
         run: |
           google-chrome --version
@@ -55,7 +57,7 @@ jobs:
       - name: Run selected deployed integration test
         run: tools/deployed-it/run.sh
       - name: Test report
-        uses: dorny/test-reporter@df6247429542221bc30d46a036ee47af1102c451 # v2
+        uses: dorny/test-reporter@a6ddd83ac95ff4586f5d3aceeb314d9a1841db95 # v3.0.0
         if: success() || failure()
         with:
           name: Deployed integration test report
