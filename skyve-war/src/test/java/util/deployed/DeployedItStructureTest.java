@@ -134,7 +134,7 @@ class DeployedItStructureTest {
 		assertTrue(workflow.contains("test-class:"));
 		assertTrue(workflow.contains("timeout-minutes:"));
 		assertTrue(workflow.contains("java-version: '17'"));
-		assertTrue(workflow.contains("${{ runner.temp }}"));
+		assertTrue(workflow.contains("$RUNNER_TEMP"));
 		assertTrue(workflow.contains("tools/deployed-it/prepare-runtime.sh"));
 		assertTrue(workflow.contains("tools/deployed-it/run.sh"));
 		assertTrue(workflow.contains("if: always()"));
