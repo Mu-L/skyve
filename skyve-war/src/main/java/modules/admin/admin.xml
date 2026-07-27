@@ -130,6 +130,8 @@
 				<singularAccess document="UserAccount" />
 				<queryAggregateAccess query="qMyLoginHistory" />
 				<queryAggregateAccess query="qMySecurityLogs" />
+				<contentAccess document="Contact" binding="image" />
+				<contentAccess document="UserDashboard" binding="currentUser.contact.image" />
 			</accesses>
 		</role>
 		<role name="AuditManager">
