@@ -1388,6 +1388,8 @@ public final class BindUtil {
 			sb.append("add").append(Character.toUpperCase(collectionName.charAt(0))).append(collectionName.substring(1)).append(ELEMENT);
 			String methodName = sb.toString();
 			
+			// NB - can't use getMethod directly as element may not be the exact class - ie dynamic proxy subclass etc
+			// Method m = collectionOwner.getClass().getMethod(methodName.toString(), element.getClass());
 			Method[] methods = collectionOwner.getClass().getMethods(); 
 			for (Method method : methods) {
 				if (methodName.equals(method.getName()) && (method.getParameterTypes().length == 1)) {
@@ -1448,6 +1450,8 @@ public final class BindUtil {
 			sb.append("add").append(Character.toUpperCase(collectionName.charAt(0))).append(collectionName.substring(1)).append(ELEMENT);
 			String methodName = sb.toString();
 			
+			// NB - can't use getMethod directly as element may not be the exact class - ie dynamic proxy subclass etc
+			// Method m = collectionOwner.getClass().getMethod(methodName.toString(), Integer.TYPE, element.getClass());
 			Method[] methods = collectionOwner.getClass().getMethods(); 
 			for (Method method : methods) {
 				if (methodName.equals(method.getName()) && (method.getParameterTypes().length == 2)) {
@@ -1506,6 +1510,8 @@ public final class BindUtil {
 			sb.append("remove").append(Character.toUpperCase(collectionName.charAt(0))).append(collectionName.substring(1)).append(ELEMENT);
 			String methodName = sb.toString();
 			
+			// NB - can't use getMethod directly as element may not be the exact class - ie dynamic proxy subclass etc
+			// Method m = collectionOwner.getClass().getMethod(methodName.toString(), Integer.TYPE, element.getClass());
 			Method[] methods = collectionOwner.getClass().getMethods(); 
 			for (Method method : methods) {
 				if (methodName.equals(method.getName())) {
