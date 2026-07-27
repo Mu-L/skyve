@@ -217,8 +217,3 @@ body .layout-wrapper .layout-main:has(> .layout-content .skyve-action-bar, > .la
 		padding-top: calc(1rem + var(--skyve-action-bar-height));
 	}
 }
-
-/* z-index customisations to ensure leaflet map controls go under top bar */
-.leaflet-top, .leaflet-bottom {
-  z-index: 997 !important;
-}

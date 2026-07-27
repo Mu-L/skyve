@@ -16,9 +16,9 @@
 		</h:head>
 		<h:body>
 			<h:panelGroup id="device"
-					layout="block"
-					pt:data-preview-url-prefix="#{device.previewUrlPrefix}"
-					pt:data-end-preview-url="#{device.endPreviewUrl}">
+							layout="block"
+							pt:data-preview-url-prefix="#{device.previewUrlPrefix}"
+							pt:data-end-preview-url="#{device.endPreviewUrl}">
 				<div class="content">
 					<iframe id="iframe" title="Device preview"></iframe>
 				</div>
@@ -28,12 +28,12 @@
 					<p:growl widgetVar="previewMessages" life="2000" showDetail="true" />
 					<p:tooltip globalSelector=".device-preview-controls .ui-speeddial-action" position="left" />
 					<p:speedDial showIcon="pi pi-bars"
-							hideIcon="pi pi-times"
-							buttonStyleClass="ui-button-danger"
-							radius="150"
-							direction="up-left"
-							type="quarter-circle"
-							ariaLabel="Device preview controls">
+									hideIcon="pi pi-times"
+									buttonStyleClass="ui-button-danger"
+									radius="150"
+									direction="up-left"
+									type="quarter-circle"
+									ariaLabel="Device preview controls">
 						<p:menuitem id="devicePreviewPhone" title="Phone" ariaLabel="Phone" icon="fa-solid fa-mobile-screen-button" />
 						<p:menuitem id="devicePreviewTablet" title="Tablet" ariaLabel="Tablet" icon="fa-solid fa-tablet-screen-button" />
 						<p:menuitem id="devicePreviewLaptop" title="Laptop" ariaLabel="Laptop" icon="fa-solid fa-laptop" />
