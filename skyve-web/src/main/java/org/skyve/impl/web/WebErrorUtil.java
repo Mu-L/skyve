@@ -98,8 +98,8 @@ public final class WebErrorUtil {
 	 * @param value The value to escape.
 	 * @return The escaped value.
 	 */
-	public static String escapeJsString(String value) {
-		return OWASP.escapeJsString(value);
+	public static String escapeJsStringWithHtmlFormatting(String value) {
+		return OWASP.escapeJsStringWithHtmlFormatting(value);
 	}
 
 	/**

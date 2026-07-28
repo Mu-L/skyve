@@ -272,8 +272,9 @@ class SmartClientViewRendererCoverageTest {
 		trustedHBox.setEscapeBorderTitle(Boolean.FALSE);
 		trustedRenderer.renderHBox(UNSAFE_TITLE, trustedHBox);
 		String code = trustedRenderer.getCode().toString();
-		assertTrue(code.contains("title:'<img src=x onerror=alert(1)>"), code);
-		assertTrue(code.contains("&quot;quoted&quot;"), code);
+		String escapedTitle = SmartClientViewRenderer.escapeSmartClientText(UNSAFE_TITLE, false);
+		assertTrue(code.contains("title:'" + escapedTitle + "'"), code);
+		assertFalse(code.contains(OWASP.escapeJsonString(escapedTitle)), code);
 		assertFalse(code.contains("&lt;img"), code);
 	}
 

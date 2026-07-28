@@ -27,7 +27,7 @@ public abstract class AbstractSmartClientInterpretedSail extends AbstractH2Test 
 	private BrowserConfiguration configuration;
 	@Nonnull protected SmartClientSelenide selenium = new SmartClientSelenide();
 	
-	public AbstractSmartClientInterpretedSail(@Nonnull BrowserConfiguration configuration) {
+	protected AbstractSmartClientInterpretedSail(@Nonnull BrowserConfiguration configuration) {
 		this.configuration = configuration;
 	}
 	
@@ -63,11 +63,8 @@ public abstract class AbstractSmartClientInterpretedSail extends AbstractH2Test 
 	}
 	
 	private void sail(Automation automation) {
-		FacesUtil.setSailFacesContextIfNeeded();
-		try {
+		try (FacesUtil.SailFacesContextScope ignored = FacesUtil.withSailFacesContextIfNeeded()) {
 			automation.execute(new SmartClientInterpretedWebDriverExecutor(selenium));
-		} finally {
-			FacesUtil.resetSailFacesContextIfNeeded();
 		}
 	}
 }

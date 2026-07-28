@@ -3,7 +3,8 @@ package org.skyve.impl.web.faces;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -12,13 +13,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.skyve.domain.messages.DomainException;
 import org.skyve.impl.sail.mock.MockFacesContext;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 import jakarta.el.ELContext;
 import jakarta.el.ELResolver;
@@ -29,11 +29,10 @@ import jakarta.faces.FacesException;
 import jakarta.faces.application.Application;
 import jakarta.faces.component.UIComponent;
 import jakarta.faces.component.UIComponentBase;
-import jakarta.faces.context.ExternalContext;
 import jakarta.faces.context.FacesContext;
 import jakarta.servlet.http.HttpServletRequest;
 
-@SuppressWarnings("static-method")
+@SuppressWarnings({ "static-method", "java:S1192" }) // Repetition makes the expression under test explicit in each assertion.
 class FacesUtilTest {
 	private abstract static class FacesContextBridge extends FacesContext {
 		static void setCurrent(FacesContext context) {
@@ -166,19 +165,15 @@ class FacesUtilTest {
 
 	@Test
 	void isIgnoreAutoUpdateReadsRequestParameterMap() {
-		FacesContext context = mock(FacesContext.class);
-		ExternalContext externalContext = mock(ExternalContext.class);
-		Map<String, String> params = new HashMap<>();
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setParameter("primefaces.ignoreautoupdate", "true");
 
-		params.put("primefaces.ignoreautoupdate", "true");
-		when(context.getExternalContext()).thenReturn(externalContext);
-		when(externalContext.getRequestParameterMap()).thenReturn(params);
-		FacesContextBridge.setCurrent(context);
+		try (MockFacesContext ignored = MockFacesContext.get(request, new MockHttpServletResponse())) {
+			assertTrue(FacesUtil.isIgnoreAutoUpdate());
 
-		assertTrue(FacesUtil.isIgnoreAutoUpdate());
-
-		params.put("primefaces.ignoreautoupdate", "false");
-		assertFalse(FacesUtil.isIgnoreAutoUpdate());
+			request.setParameter("primefaces.ignoreautoupdate", "false");
+			assertFalse(FacesUtil.isIgnoreAutoUpdate());
+		}
 	}
 
 	@Test
@@ -206,28 +201,32 @@ class FacesUtilTest {
 	void isRealFacesContextDistinguishesMockAndRealContexts() {
 		assertFalse(FacesUtil.isRealFacesContext());
 
-		FacesContextBridge.setCurrent(new MockFacesContext());
-		assertFalse(FacesUtil.isRealFacesContext());
+		try (MockFacesContext ignored = MockFacesContext.get()) {
+			assertFalse(FacesUtil.isRealFacesContext());
+		}
 
 		FacesContextBridge.setCurrent(mock(FacesContext.class));
 		assertTrue(FacesUtil.isRealFacesContext());
 	}
 
 	@Test
-	void sailFacesContextSetAndResetLifecycleIsSafe() {
-		FacesContextBridge.setCurrent(null);
+	void sailFacesContextScopeReleasesOnlyTheContextItOwns() {
+		try (FacesUtil.SailFacesContextScope outer = FacesUtil.withSailFacesContextIfNeeded()) {
+			FacesContext installed = FacesContext.getCurrentInstance();
+			assertTrue(installed instanceof MockFacesContext);
 
-		FacesUtil.setSailFacesContextIfNeeded();
-		assertTrue(FacesContext.getCurrentInstance() instanceof MockFacesContext);
+			try (FacesUtil.SailFacesContextScope ignored = FacesUtil.withSailFacesContextIfNeeded()) {
+				assertSame(installed, FacesContext.getCurrentInstance());
+			}
+			assertSame(installed, FacesContext.getCurrentInstance());
+		}
+		assertNull(FacesContext.getCurrentInstance());
 
-		FacesUtil.setSailFacesContextIfNeeded();
-		assertTrue(FacesContext.getCurrentInstance() instanceof MockFacesContext);
-
-		FacesUtil.resetSailFacesContextIfNeeded();
-		assertFalse(FacesContext.getCurrentInstance() instanceof MockFacesContext);
-
-		FacesContextBridge.setCurrent(mock(FacesContext.class));
-		FacesUtil.resetSailFacesContextIfNeeded();
-		assertNotNull(FacesContext.getCurrentInstance());
+		FacesContext existing = mock(FacesContext.class);
+		FacesContextBridge.setCurrent(existing);
+		try (FacesUtil.SailFacesContextScope ignored = FacesUtil.withSailFacesContextIfNeeded()) {
+			assertSame(existing, FacesContext.getCurrentInstance());
+		}
+		assertSame(existing, FacesContext.getCurrentInstance());
 	}
 }

@@ -758,7 +758,7 @@ public class ContentUploadView extends AbstractUploadView {
 		js.append("}else{");
 		if (companionBinding != null) {
 			js.append("skyveUploadWindow.isc.WindowStack.getOpener()._vm.setValue('");
-			js.append(OWASP.escapeJsString(companionBinding, false, false));
+			js.append(OWASP.escapeJsStringWithHtmlFormatting(companionBinding, false, false));
 			js.append("','").append(mediaKind).append("');");
 		}
 		js.append("skyveUploadWindow.isc.WindowStack.getOpener()._vm.setValue('").append(sanitisedContentBinding);
@@ -769,10 +769,10 @@ public class ContentUploadView extends AbstractUploadView {
 		js.append("}else if(skyveUploadWindow.SKYVE){if(skyveUploadWindow.SKYVE.PF){skyveUploadWindow.SKYVE.PF.afterContentUpload('").append(sanitisedContentBinding);
 		js.append("','").append(contentId).append("','");
 		js.append(bean.getBizModule()).append('.').append(bean.getBizDocument()).append("','");
-		js.append(OWASP.escapeJsString(content.getFileName(), false, false)).append("','");
+		js.append(OWASP.escapeJsStringWithHtmlFormatting(content.getFileName(), false, false)).append("','");
 		js.append(mediaKind).append('\'');
 		if (companionBinding != null) {
-			js.append(",'").append(OWASP.escapeJsString(companionBinding, false, false)).append('\'');
+			js.append(",'").append(OWASP.escapeJsStringWithHtmlFormatting(companionBinding, false, false)).append('\'');
 		}
 		js.append(")}}}");
 		return js.toString();
@@ -787,10 +787,10 @@ public class ContentUploadView extends AbstractUploadView {
 		js.append("skyveUploadWindow.isc.BizUtil.afterContentUpload('").append(sanitisedContentBinding);
 		js.append("','").append(contentId).append("','");
 		js.append(bean.getBizModule()).append('.').append(bean.getBizDocument()).append("','");
-		js.append(OWASP.escapeJsString(content.getFileName(), false, false)).append("','");
+		js.append(OWASP.escapeJsStringWithHtmlFormatting(content.getFileName(), false, false)).append("','");
 		js.append(mediaKind).append('\'');
 		if (companionBinding != null) {
-			js.append(",'").append(OWASP.escapeJsString(companionBinding, false, false)).append('\'');
+			js.append(",'").append(OWASP.escapeJsStringWithHtmlFormatting(companionBinding, false, false)).append('\'');
 		}
 		js.append(");");
 	}

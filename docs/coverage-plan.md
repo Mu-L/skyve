@@ -84,7 +84,7 @@ HTML reports:
 | `skyve-web` filter or non-CORE servlet class | `skyve-web/src/test/java/` — plain Mockito of Jakarta servlet interfaces |
 | Uses `CORE.*`, `EXT.*`, or `AbstractPersistence` singletons | `skyve-war/src/test/java/` — extend `AbstractH2Test` or `AbstractSkyveTest` |
 | Needs full Customer/Module/Document metadata graph | `skyve-war/src/test/java/modules/test/` — extend `AbstractSkyveTest` |
-| JSF pipeline/component builders (needs FacesContext + CORE) | `skyve-war/src/test/java/` — extend `AbstractSkyveTest`; call `FacesUtil.setSailFacesContextIfNeeded()` in `@BeforeEach` |
+| JSF pipeline/component builders (needs FacesContext + CORE) | `skyve-war/src/test/java/` — extend `AbstractSkyveTest`; open a `FacesUtil.withSailFacesContextIfNeeded()` scope in `@BeforeEach` |
 | Admin module domain/actions | `skyve-war/src/test/java/modules/admin/` — extend `AbstractSkyveTest` |
 
 Tests in `skyve-war` that call into `skyve-core`, `skyve-ext`, or `skyve-web` classes count toward those modules' coverage in the aggregate.
@@ -144,13 +144,16 @@ These are the largest testable packages with proven patterns.
 
 **Setup:**
 ```java
+private FacesUtil.SailFacesContextScope facesContextScope;
+
 @BeforeEach
 void setUpFaces() {
-    FacesUtil.setSailFacesContextIfNeeded();
+    facesContextScope = FacesUtil.withSailFacesContextIfNeeded();
 }
+
 @AfterEach
 void tearDownFaces() {
-    FacesUtil.resetSailFacesContextIfNeeded();
+    facesContextScope.close();
 }
 ```
 
@@ -696,9 +699,9 @@ Skyve ships a headless Faces mock stack in production code (`impl/sail/mock`):
 - `MockApplication` — registers all PrimeFaces component types
 - `MockELContext` + `MockExpressionFactory` — returns null for all EL
 
-Install via `FacesUtil.setSailFacesContextIfNeeded()` (thread-local). Remove via `FacesUtil.resetSailFacesContextIfNeeded()`.
+Open a thread-local scope via `FacesUtil.withSailFacesContextIfNeeded()` and close it after execution.
 
-**Critical:** `AbstractFacesBuilder` initializes FacesContext-dependent fields at construction time. `setSailFacesContextIfNeeded()` MUST be called in `@BeforeEach` BEFORE instantiating any builder.
+**Critical:** `AbstractFacesBuilder` initializes FacesContext-dependent fields at construction time. The Faces context scope MUST be opened in `@BeforeEach` BEFORE instantiating any builder.
 
 This unlocks `impl/web/faces/pipeline/component` (3 953 lines), `pipeline/layout` (655 lines), and chart renderers for direct testing without a servlet container.
 
@@ -725,4 +728,3 @@ This unlocks `impl/web/faces/pipeline/component` (3 953 lines), `pipeline/layout
 **Best lines-per-session:** WP-1, WP-16, WP-23 (Snapshot). Start with WP-1.
 
 ---
-

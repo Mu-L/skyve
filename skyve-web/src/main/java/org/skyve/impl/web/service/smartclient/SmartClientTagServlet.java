@@ -35,8 +35,8 @@ import org.skyve.tag.TagManager;
 import org.skyve.util.JSON;
 import org.skyve.util.OWASP;
 import org.skyve.util.Util;
-import org.slf4j.Logger;
 import org.skyve.util.logging.SkyveLoggerFactory;
+import org.slf4j.Logger;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -234,7 +234,7 @@ public class SmartClientTagServlet extends HttpServlet {
 	 */
 	static void appendUnexpectedWarning(String reference, PrintWriter pw) {
 		pw.append("The tag operation was unsuccessful. ");
-		pw.append(WebErrorUtil.escapeJsString(WebErrorUtil.genericMessage(reference)));
+		pw.append(WebErrorUtil.escapeJsStringWithHtmlFormatting(WebErrorUtil.genericMessage(reference)));
 	}
 
 	/**
@@ -254,8 +254,8 @@ public class SmartClientTagServlet extends HttpServlet {
 	    sb.append("{isSeparator:true}");
 
         for (DomainValue value : EXT.getTagManager().getTags()) {
-        	String escapedCode = OWASP.escapeJsString(value.getCode());
-        	String escapedDescription = OWASP.escapeJsString(value.getLocalisedDescription());
+        	String escapedCode = OWASP.escapeJsStringWithHtmlFormatting(value.getCode());
+        	String escapedDescription = OWASP.escapeJsStringWithHtmlFormatting(value.getLocalisedDescription());
         	
         	// tag select menu
             sb.append(",{title:'").append(escapedDescription).append("',icon:'icons/tag.png',click:function(){");

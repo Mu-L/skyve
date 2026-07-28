@@ -5,59 +5,44 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.skyve.content.AttachmentContent;
 import org.skyve.domain.Bean;
+import org.skyve.impl.sail.mock.MockFacesContext;
 import org.skyve.web.WebContext;
-
-import jakarta.faces.context.ExternalContext;
-import jakarta.faces.context.FacesContext;
-import jakarta.servlet.http.HttpSession;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 @SuppressWarnings({ "static-method", "java:S1192", "java:S5960" }) // Repeated values and assertions are test-only.
 class ImageMarkupViewTest {
-	private abstract static class FacesContextBridge extends FacesContext {
-		static void setCurrent(FacesContext context) {
-			setCurrentInstance(context);
-		}
-	}
-
-	@AfterEach
-	void clearFacesContext() {
-		FacesContextBridge.setCurrent(null);
-	}
-
 	@Test
 	void postConstructDeniesAccessWhenSessionIsMissing() {
-		FacesContext context = mockFacesContextWithSession(null);
-		FacesContextBridge.setCurrent(context);
-		ImageMarkupView view = new ImageMarkupView();
+		MockHttpServletRequest request = new MockHttpServletRequest();
 
-		view.postConstruct();
+		try (MockFacesContext ignored = MockFacesContext.get(request, new MockHttpServletResponse())) {
+			ImageMarkupView view = new ImageMarkupView();
+			view.postConstruct();
 
-		assertFalse(view.isCanAccess());
+			assertFalse(view.isCanAccess());
+		}
 	}
 
 	@Test
 	void postConstructAllowsAccessWhenUserSessionAttributeIsPresent() {
-		HttpSession session = mock(HttpSession.class);
-		when(session.getAttribute(WebContext.USER_SESSION_ATTRIBUTE_NAME)).thenReturn(new Object());
-		FacesContext context = mockFacesContextWithSession(session);
-		FacesContextBridge.setCurrent(context);
-		ImageMarkupView view = new ImageMarkupView();
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.getSession().setAttribute(WebContext.USER_SESSION_ATTRIBUTE_NAME, new Object());
 
-		view.postConstruct();
+		try (MockFacesContext ignored = MockFacesContext.get(request, new MockHttpServletResponse())) {
+			ImageMarkupView view = new ImageMarkupView();
+			view.postConstruct();
 
-		assertTrue(view.isCanAccess());
+			assertTrue(view.isCanAccess());
+		}
 	}
 
 	@Test
@@ -132,15 +117,14 @@ class ImageMarkupViewTest {
 
 	@Test
 	void applyAddsMalformedUrlMessageWhenRequiredParametersAreMissing() throws Exception {
-		FacesContext context = mock(FacesContext.class);
-		FacesContextBridge.setCurrent(context);
 		ImageMarkupView view = new ImageMarkupView();
 		setField(view, "canAccess", Boolean.TRUE);
 		view.setContextParameter("ctx");
 
-		assertDoesNotThrow(view::apply);
-
-		verify(context).addMessage(isNull(), any());
+		try (MockFacesContext context = MockFacesContext.get()) {
+			assertDoesNotThrow(view::apply);
+			assertTrue(context.getMessages().hasNext());
+		}
 	}
 
 	@Test
@@ -160,14 +144,6 @@ class ImageMarkupViewTest {
 		assertFalse(script.contains("skyveMarkupWindow=skyveMarkupWindow.parent"), script);
 		assertFalse(script.contains("window.parent.isc"), script);
 		assertFalse(script.contains("top.SKYVE"), script);
-	}
-
-	private static FacesContext mockFacesContextWithSession(HttpSession session) {
-		FacesContext context = mock(FacesContext.class);
-		ExternalContext externalContext = mock(ExternalContext.class);
-		when(context.getExternalContext()).thenReturn(externalContext);
-		when(externalContext.getSession(false)).thenReturn(session);
-		return context;
 	}
 
 	@SuppressWarnings({ "java:S112", "java:S3011" }) // Reflection configures private view state without a JSF container.

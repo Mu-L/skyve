@@ -303,7 +303,7 @@ public class MenuView extends HarnessView {
 			destination.append("&b=").append(mapItem.getGeometryBinding());
 		}
 
-		return "javascript:SKYVE.PF.startHistory('" + OWASP.escapeJsString(destination.toString()) + "')";
+		return "javascript:SKYVE.PF.startHistory('" + OWASP.escapeJsStringWithHtmlFormatting(destination.toString()) + "')";
 	}
 
 	/**

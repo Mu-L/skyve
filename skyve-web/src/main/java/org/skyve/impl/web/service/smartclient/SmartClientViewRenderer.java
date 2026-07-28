@@ -190,7 +190,7 @@ public class SmartClientViewRenderer extends ViewRenderer {
 	 *        {@code false} to allow trusted markup
 	 * @return escaped JavaScript string content, or {@code null} when {@code value} is {@code null}
 	 */
-	static String escapeSmartClientText(String value, boolean escape) {
+	static @Nullable String escapeSmartClientText(@Nullable String value, boolean escape) {
 		if (value == null) {
 			return null;
 		}
@@ -592,7 +592,7 @@ public class SmartClientViewRenderer extends ViewRenderer {
 		Collapsible collapsible = box.getCollapsible();
 		if (collapsible != null) {
 			result = "v" + variableCounter++;
-			code.append("var ").append(result).append("=isc.BizCollapsible.create({title:'").append(OWASP.escapeJsonString(borderTitle));
+			code.append("var ").append(result).append("=isc.BizCollapsible.create({title:'").append(borderTitle);
 			code.append("',minimized:").append(collapsible.equals(Collapsible.closed) ? "true," : "false,");
 			size(box, null, code);
 			invisible(box.getInvisibleConditionName(), code);
@@ -1388,7 +1388,7 @@ public class SmartClientViewRenderer extends ViewRenderer {
 		if (title == null) {
 			title = value;
 		}
-		title = OWASP.escapeJsString(title);
+		title = OWASP.escapeJsStringWithHtmlFormatting(title);
 		code.append("endRow:false");
 		if (title != null) {
 			code.append(",title:'").append(title).append('\'');
@@ -1403,7 +1403,7 @@ public class SmartClientViewRenderer extends ViewRenderer {
 		}
 
 		if (binding == null) {
-			code.append("defaultValue:'").append(OWASP.escapeJsString(value, false, false));
+			code.append("defaultValue:'").append(OWASP.escapeJsStringWithHtmlFormatting(value, false, false));
 		}
 		else {
 			code.append("name:'").append(BindUtil.sanitiseBinding(binding));
@@ -1461,7 +1461,7 @@ public class SmartClientViewRenderer extends ViewRenderer {
 
 		String binding = label.getBinding();
 		if (binding == null) {
-			code.append("value:'").append(OWASP.escapeJsString(value, false, false));
+			code.append("value:'").append(OWASP.escapeJsStringWithHtmlFormatting(value, false, false));
 		}
 		else {
 			code.append("binding:'").append(BindUtil.sanitiseBinding(binding));
@@ -2384,7 +2384,7 @@ public class SmartClientViewRenderer extends ViewRenderer {
 		size(html, null, code);
 		String mentionMarkers = html.getMentionMarkers();
 		if (mentionMarkers != null) {
-			code.append("mentionMarkers:'").append(OWASP.escapeJsString(mentionMarkers)).append("',");
+			code.append("mentionMarkers:'").append(OWASP.escapeJsStringWithHtmlFormatting(mentionMarkers)).append("',");
 		}
 		disabled(html.getDisabledConditionName(), code);
 		invisible(html.getInvisibleConditionName(), code);
@@ -4891,15 +4891,15 @@ public class SmartClientViewRenderer extends ViewRenderer {
 		toAppendTo.append(",canUpdate:").append(user.canUpdateDocument(drivingDocument));
 		toAppendTo.append(",canDelete:").append(user.canDeleteDocument(drivingDocument));
 		toAppendTo.append(",title:'");
-		toAppendTo.append(OWASP.escapeJsString(description));
+		toAppendTo.append(OWASP.escapeJsStringWithHtmlFormatting(description));
 		toAppendTo.append("',fields:[");
 
 		if (! config) {
 			toAppendTo.append("{name:'bizTagged',title:'");
-			toAppendTo.append(OWASP.escapeJsString(Util.nullSafeI18n("ui.tag"), false, true));
+			toAppendTo.append(OWASP.escapeJsStringWithHtmlFormatting(Util.nullSafeI18n("ui.tag"), false, true));
 			toAppendTo.append("',type:'boolean',validOperators:['equals']},");
 			toAppendTo.append("{name:'bizFlagComment',title:'");
-			toAppendTo.append(OWASP.escapeJsString(Util.nullSafeI18n("ui.flag"), false, true));
+			toAppendTo.append(OWASP.escapeJsStringWithHtmlFormatting(Util.nullSafeI18n("ui.flag"), false, true));
 			toAppendTo.append("'},"); //,length:1024} long length makes filter builder use a text area
 		}
 

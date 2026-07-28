@@ -194,7 +194,7 @@ abstract class SmartClientAttributeDefinition {
 							// NB don't use processString for regular expression as \n could be a valid part of the expression and needs to remain
 							sb.append("{expression:'").append(regex.replace("\\", "\\\\").replace("'", "\\'"));
 							sb.append("',type:'regexp',errorMessage:'");
-							sb.append(OWASP.escapeJsString(validator.constructMessage(user, title, converter)));
+							sb.append(OWASP.escapeJsStringWithHtmlFormatting(validator.constructMessage(user, title, converter)));
 							sb.append("'}");
 							validation = sb.toString();
 						}
@@ -243,7 +243,7 @@ abstract class SmartClientAttributeDefinition {
 							sb.append("max:isc.DateUtil.parseSchemaDate('").append(Binder.nullSafeConvert(java.util.Date.class, max)).append("'),");
 						}
 						sb.append("type:'dateRange',errorMessage:'");
-						sb.append(OWASP.escapeJsString(dateValidator.constructMessage(user, title, converter)));
+						sb.append(OWASP.escapeJsStringWithHtmlFormatting(dateValidator.constructMessage(user, title, converter)));
 						sb.append("'}");
 
 						validation = sb.toString();
@@ -262,13 +262,13 @@ abstract class SmartClientAttributeDefinition {
 							sb.append("max:").append(max).append(',');
 						}
 						sb.append("type:'floatRange',errorMessage:'");
-						sb.append(OWASP.escapeJsString(decimalValidator.constructMessage(user, title, converter)));
+						sb.append(OWASP.escapeJsStringWithHtmlFormatting(decimalValidator.constructMessage(user, title, converter)));
 						sb.append("'}");
 
 						Integer precision = decimalValidator.getPrecision();
 						if (precision != null) {
 							sb.append(",{precision:").append(precision).append(",roundToPrecision:true,type:'floatPrecision',errorMessage:'");
-							sb.append(OWASP.escapeJsString(decimalValidator.constructMessage(user, title, converter)));
+							sb.append(OWASP.escapeJsStringWithHtmlFormatting(decimalValidator.constructMessage(user, title, converter)));
 							sb.append("'}");
 						}
 						validation = sb.toString();
@@ -287,7 +287,7 @@ abstract class SmartClientAttributeDefinition {
 							sb.append("max:").append(max).append(',');
 						}
 						sb.append("type:'integerRange',errorMessage:'");
-						sb.append(OWASP.escapeJsString(integerValidator.constructMessage(user, title, converter)));
+						sb.append(OWASP.escapeJsStringWithHtmlFormatting(integerValidator.constructMessage(user, title, converter)));
 						sb.append("'}");
 
 						validation = sb.toString();
@@ -306,7 +306,7 @@ abstract class SmartClientAttributeDefinition {
 							sb.append("max:").append(max).append(',');
 						}
 						sb.append("type:'integerRange',errorMessage:'");
-						sb.append(OWASP.escapeJsString(longValidator.constructMessage(user, title, converter)));
+						sb.append(OWASP.escapeJsStringWithHtmlFormatting(longValidator.constructMessage(user, title, converter)));
 						sb.append("'}");
 
 						validation = sb.toString();
@@ -933,8 +933,8 @@ abstract class SmartClientAttributeDefinition {
 
         Map<String, String> dvMap = new LinkedHashMap<>();
         for (DomainValue domainValue : values) {
-            String key = OWASP.escapeJsString(domainValue.getCode());
-            String value = OWASP.escapeJsString(domainValue.getLocalisedDescription());
+            String key = OWASP.escapeJsStringWithHtmlFormatting(domainValue.getCode());
+            String value = OWASP.escapeJsStringWithHtmlFormatting(domainValue.getLocalisedDescription());
             dvMap.put(key, value);
         }
 

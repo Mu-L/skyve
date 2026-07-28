@@ -308,7 +308,7 @@ class SmartClientSnapshotAdapter extends SnapshotAdapter {
 		
 		for (Entry<String, Integer> column : snapshot.getColumns().entrySet()) {
 			String key = column.getKey();
-			result.append('{').append(SC_NAME).append(":\\\"").append(OWASP.escapeJsString(key));
+			result.append('{').append(SC_NAME).append(":\\\"").append(OWASP.escapeJsStringWithHtmlFormatting(key));
 			Integer value = column.getValue();
 			if (value == null) {
 				result.append("\\\",autoFitWidth:false},");
@@ -330,7 +330,7 @@ class SmartClientSnapshotAdapter extends SnapshotAdapter {
 			result.append("\"({sortSpecifiers:[");
 			
 			sorts.forEach((c, d) -> {
-				result.append('{').append(SC_PROPERTY).append(":\\\"").append(OWASP.escapeJsString(c));
+				result.append('{').append(SC_PROPERTY).append(":\\\"").append(OWASP.escapeJsStringWithHtmlFormatting(c));
 				result.append("\\\",").append(SC_DIRECTION).append(":\\\"").append(d).append("\\\"},");
 			});
 			result.setLength(result.length() - 1); // remove last comma
@@ -341,7 +341,7 @@ class SmartClientSnapshotAdapter extends SnapshotAdapter {
 		result.append('"').append(SC_GROUP_STATE).append("\":\"");
 		String group = snapshot.getGroup();
 		if (group != null) {
-			result.append("([{").append(SC_FIELD_NAME).append(":\"").append(OWASP.escapeJsString(group)).append("\"}])");
+			result.append("([{").append(SC_FIELD_NAME).append(":\"").append(OWASP.escapeJsStringWithHtmlFormatting(group)).append("\"}])");
 		}
 		result.append("\",");
 

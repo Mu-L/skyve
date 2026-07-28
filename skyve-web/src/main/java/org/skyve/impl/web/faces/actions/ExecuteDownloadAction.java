@@ -94,7 +94,7 @@ public class ExecuteDownloadAction extends FacesAction<Void> {
 														facesView.getViewBinding(),
 														dataWidgetBinding,
 														elementBizId);
-			PrimeFaces.current().executeScript("window.location.assign('" + OWASP.escapeJsString(url) + "')");
+			PrimeFaces.current().executeScript("window.location.assign('" + OWASP.escapeJsStringWithHtmlFormatting(url) + "')");
 			
 			// We want to call post render
 			facesView.setPostRender(targetDocument.getBizlet(customer), targetBean);

@@ -2,8 +2,8 @@ package org.skyve.impl.web.service.smartclient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -20,13 +20,13 @@ import java.util.List;
 import java.util.SortedMap;
 
 import org.junit.jupiter.api.Test;
+import org.skyve.domain.Bean;
 import org.skyve.domain.DynamicBean;
+import org.skyve.domain.PersistentBean;
 import org.skyve.domain.messages.Message;
 import org.skyve.domain.messages.MessageException;
 import org.skyve.domain.messages.OptimisticLockException;
 import org.skyve.domain.messages.ValidationException;
-import org.skyve.domain.PersistentBean;
-import org.skyve.domain.Bean;
 import org.skyve.domain.types.OptimisticLock;
 import org.skyve.impl.metadata.customer.CustomerImpl;
 import org.skyve.impl.metadata.model.document.field.Text;
@@ -34,10 +34,10 @@ import org.skyve.impl.persistence.AbstractPersistence;
 import org.skyve.impl.web.AbstractWebContext;
 import org.skyve.impl.web.WebErrorUtil;
 import org.skyve.metadata.model.document.Association;
-import org.skyve.metadata.view.View;
-import org.skyve.metadata.model.document.Document;
 import org.skyve.metadata.model.document.Bizlet;
+import org.skyve.metadata.model.document.Document;
 import org.skyve.metadata.user.User;
+import org.skyve.metadata.view.View;
 import org.skyve.util.OWASP;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -135,7 +135,7 @@ class SmartClientEditServletErrorResponseTest {
 	@SuppressWarnings("static-method")
 	void appendErrorTextEscapesJavascriptSensitiveCharacters() {
 		String raw = "\"quoted\" <script>";
-		String expected = OWASP.escapeJsString(raw);
+		String expected = OWASP.escapeJsStringWithHtmlFormatting(raw);
 
 		StringWriter writer = new StringWriter();
 		try (PrintWriter printWriter = new PrintWriter(writer)) {
@@ -194,7 +194,7 @@ class SmartClientEditServletErrorResponseTest {
 		Method method = SmartClientEditServlet.class.getDeclaredMethod("pumpOutValidationErrors", List.class, StringBuilder.class);
 		method.setAccessible(true);
 		String raw = "\"quoted\" <script>";
-		String escaped = OWASP.escapeJsString(OWASP.escapeHtml(raw));
+		String escaped = OWASP.escapeJsStringWithHtmlFormatting(OWASP.escapeHtml(raw));
 
 		boolean hasBindings = ((Boolean) method.invoke(null,
 				List.of(new Message(new String[] {"customer.name"}, raw)),

@@ -45,7 +45,7 @@ class WebErrorUtilTest {
 
 	@Test
 	void escapeHelpersDelegateToTheUnderlyingEncoders() {
-		assertEquals("A&B", WebErrorUtil.escapeJsString("A&B"));
+		assertEquals("A&B", WebErrorUtil.escapeJsStringWithHtmlFormatting("A&B"));
 		assertEquals("A&amp;B", WebErrorUtil.escapeXmlText("A&B"));
 		assertThat(WebErrorUtil.newErrorReference(), instanceOf(String.class));
 		assertFalse(WebErrorUtil.newErrorReference().isBlank());

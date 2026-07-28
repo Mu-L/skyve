@@ -24,12 +24,17 @@ import util.AbstractH2Test;
  * Tests for the ExecuteSAIL action validation logic.
  * 
  * Note: The full execution logic is not tested here because it involves:
- * - FacesUtil.setSailFacesContextIfNeeded() (FacesContext setup)
+ * - FacesUtil.withSailFacesContextIfNeeded() (FacesContext setup)
  * - CORE.getPersistence() and CORE.getRepository() (static calls)
  * - XMLMetaData.unmarshalSAILString() (XML parsing)
  * - Dynamic class loading and instantiation
  */
+@SuppressWarnings("java:S120") // Module test packages mirror the generated document package.
 class ExecuteSAILTest extends AbstractH2Test {
+	private static final String BASE_URL = "http://localhost:8080";
+	private static final String COMPONENT_BUILDER = "org.skyve.impl.web.faces.pipeline.component.SkyveComponentBuilderChain";
+	private static final String LAYOUT_BUILDER = "org.skyve.impl.web.faces.pipeline.layout.ResponsiveLayoutBuilder";
+	private static final String SAIL = "<automation/>";
 
 	private DataBuilder db;
 	private ControlPanelExtension controlPanel;
@@ -44,16 +49,14 @@ class ExecuteSAILTest extends AbstractH2Test {
 	void testExecuteSAILWithNullUserThrowsValidationException() {
 		// setup the test data - all fields except user
 		controlPanel.setSailUser(null);
-		controlPanel.setSailBaseUrl("http://localhost:8080");
+		controlPanel.setSailBaseUrl(BASE_URL);
 		controlPanel.setSailExecutor(SailExecutor.primeFacesInlineWebDriver);
-		controlPanel.setSailComponentBuilder("org.skyve.impl.web.faces.pipeline.component.SkyveComponentBuilderChain");
-		controlPanel.setSailLayoutBuilder("org.skyve.impl.web.faces.pipeline.layout.ResponsiveLayoutBuilder");
-		controlPanel.setSail("<automation/>");
+		controlPanel.setSailComponentBuilder(COMPONENT_BUILDER);
+		controlPanel.setSailLayoutBuilder(LAYOUT_BUILDER);
+		controlPanel.setSail(SAIL);
 
 		// call the method under test and expect exception
-		ValidationException e = assertThrows(ValidationException.class, () -> {
-			ExecuteSAIL.executeSAIL(controlPanel);
-		});
+		ValidationException e = assertThrows(ValidationException.class, () -> ExecuteSAIL.executeSAIL(controlPanel));
 
 		// verify the exception contains the sailUser binding
 		assertEquals(1, e.getMessages().size());
@@ -63,11 +66,11 @@ class ExecuteSAILTest extends AbstractH2Test {
 	@Test
 	void executePropagatesValidationExceptionFromActionEntryPoint() {
 		controlPanel.setSailUser(null);
-		controlPanel.setSailBaseUrl("http://localhost:8080");
+		controlPanel.setSailBaseUrl(BASE_URL);
 		controlPanel.setSailExecutor(SailExecutor.primeFacesInlineWebDriver);
-		controlPanel.setSailComponentBuilder("org.skyve.impl.web.faces.pipeline.component.SkyveComponentBuilderChain");
-		controlPanel.setSailLayoutBuilder("org.skyve.impl.web.faces.pipeline.layout.ResponsiveLayoutBuilder");
-		controlPanel.setSail("<automation/>");
+		controlPanel.setSailComponentBuilder(COMPONENT_BUILDER);
+		controlPanel.setSailLayoutBuilder(LAYOUT_BUILDER);
+		controlPanel.setSail(SAIL);
 
 		ValidationException e = assertThrows(ValidationException.class,
 				() -> new ExecuteSAIL().execute(controlPanel, null));
@@ -83,14 +86,12 @@ class ExecuteSAILTest extends AbstractH2Test {
 		controlPanel.setSailUser(user);
 		controlPanel.setSailBaseUrl(null);
 		controlPanel.setSailExecutor(SailExecutor.primeFacesInlineWebDriver);
-		controlPanel.setSailComponentBuilder("org.skyve.impl.web.faces.pipeline.component.SkyveComponentBuilderChain");
-		controlPanel.setSailLayoutBuilder("org.skyve.impl.web.faces.pipeline.layout.ResponsiveLayoutBuilder");
-		controlPanel.setSail("<automation/>");
+		controlPanel.setSailComponentBuilder(COMPONENT_BUILDER);
+		controlPanel.setSailLayoutBuilder(LAYOUT_BUILDER);
+		controlPanel.setSail(SAIL);
 
 		// call the method under test and expect exception
-		ValidationException e = assertThrows(ValidationException.class, () -> {
-			ExecuteSAIL.executeSAIL(controlPanel);
-		});
+		ValidationException e = assertThrows(ValidationException.class, () -> ExecuteSAIL.executeSAIL(controlPanel));
 
 		// verify the exception contains the sailBaseUrl binding
 		assertEquals(1, e.getMessages().size());
@@ -102,16 +103,14 @@ class ExecuteSAILTest extends AbstractH2Test {
 		// setup the test data - all fields except executor
 		UserProxyExtension user = db.build(UserProxy.MODULE_NAME, UserProxy.DOCUMENT_NAME);
 		controlPanel.setSailUser(user);
-		controlPanel.setSailBaseUrl("http://localhost:8080");
+		controlPanel.setSailBaseUrl(BASE_URL);
 		controlPanel.setSailExecutor(null);
-		controlPanel.setSailComponentBuilder("org.skyve.impl.web.faces.pipeline.component.SkyveComponentBuilderChain");
-		controlPanel.setSailLayoutBuilder("org.skyve.impl.web.faces.pipeline.layout.ResponsiveLayoutBuilder");
-		controlPanel.setSail("<automation/>");
+		controlPanel.setSailComponentBuilder(COMPONENT_BUILDER);
+		controlPanel.setSailLayoutBuilder(LAYOUT_BUILDER);
+		controlPanel.setSail(SAIL);
 
 		// call the method under test and expect exception
-		ValidationException e = assertThrows(ValidationException.class, () -> {
-			ExecuteSAIL.executeSAIL(controlPanel);
-		});
+		ValidationException e = assertThrows(ValidationException.class, () -> ExecuteSAIL.executeSAIL(controlPanel));
 
 		// verify the exception contains the sailExecutor binding
 		assertEquals(1, e.getMessages().size());
@@ -123,16 +122,14 @@ class ExecuteSAILTest extends AbstractH2Test {
 		// setup the test data - all fields except componentBuilder
 		UserProxyExtension user = db.build(UserProxy.MODULE_NAME, UserProxy.DOCUMENT_NAME);
 		controlPanel.setSailUser(user);
-		controlPanel.setSailBaseUrl("http://localhost:8080");
+		controlPanel.setSailBaseUrl(BASE_URL);
 		controlPanel.setSailExecutor(SailExecutor.primeFacesInlineWebDriver);
 		controlPanel.setSailComponentBuilder(null);
-		controlPanel.setSailLayoutBuilder("org.skyve.impl.web.faces.pipeline.layout.ResponsiveLayoutBuilder");
-		controlPanel.setSail("<automation/>");
+		controlPanel.setSailLayoutBuilder(LAYOUT_BUILDER);
+		controlPanel.setSail(SAIL);
 
 		// call the method under test and expect exception
-		ValidationException e = assertThrows(ValidationException.class, () -> {
-			ExecuteSAIL.executeSAIL(controlPanel);
-		});
+		ValidationException e = assertThrows(ValidationException.class, () -> ExecuteSAIL.executeSAIL(controlPanel));
 
 		// verify the exception contains the sailComponentBuilder binding
 		assertEquals(1, e.getMessages().size());
@@ -144,16 +141,14 @@ class ExecuteSAILTest extends AbstractH2Test {
 		// setup the test data - all fields except layoutBuilder
 		UserProxyExtension user = db.build(UserProxy.MODULE_NAME, UserProxy.DOCUMENT_NAME);
 		controlPanel.setSailUser(user);
-		controlPanel.setSailBaseUrl("http://localhost:8080");
+		controlPanel.setSailBaseUrl(BASE_URL);
 		controlPanel.setSailExecutor(SailExecutor.primeFacesInlineWebDriver);
-		controlPanel.setSailComponentBuilder("org.skyve.impl.web.faces.pipeline.component.SkyveComponentBuilderChain");
+		controlPanel.setSailComponentBuilder(COMPONENT_BUILDER);
 		controlPanel.setSailLayoutBuilder(null);
-		controlPanel.setSail("<automation/>");
+		controlPanel.setSail(SAIL);
 
 		// call the method under test and expect exception
-		ValidationException e = assertThrows(ValidationException.class, () -> {
-			ExecuteSAIL.executeSAIL(controlPanel);
-		});
+		ValidationException e = assertThrows(ValidationException.class, () -> ExecuteSAIL.executeSAIL(controlPanel));
 
 		// verify the exception contains the sailLayoutBuilder binding
 		assertEquals(1, e.getMessages().size());
@@ -165,16 +160,14 @@ class ExecuteSAILTest extends AbstractH2Test {
 		// setup the test data - all fields except sail
 		UserProxyExtension user = db.build(UserProxy.MODULE_NAME, UserProxy.DOCUMENT_NAME);
 		controlPanel.setSailUser(user);
-		controlPanel.setSailBaseUrl("http://localhost:8080");
+		controlPanel.setSailBaseUrl(BASE_URL);
 		controlPanel.setSailExecutor(SailExecutor.primeFacesInlineWebDriver);
-		controlPanel.setSailComponentBuilder("org.skyve.impl.web.faces.pipeline.component.SkyveComponentBuilderChain");
-		controlPanel.setSailLayoutBuilder("org.skyve.impl.web.faces.pipeline.layout.ResponsiveLayoutBuilder");
+		controlPanel.setSailComponentBuilder(COMPONENT_BUILDER);
+		controlPanel.setSailLayoutBuilder(LAYOUT_BUILDER);
 		controlPanel.setSail(null);
 
 		// call the method under test and expect exception
-		ValidationException e = assertThrows(ValidationException.class, () -> {
-			ExecuteSAIL.executeSAIL(controlPanel);
-		});
+		ValidationException e = assertThrows(ValidationException.class, () -> ExecuteSAIL.executeSAIL(controlPanel));
 
 		// verify the exception contains the sail binding
 		assertEquals(1, e.getMessages().size());
@@ -192,9 +185,7 @@ class ExecuteSAILTest extends AbstractH2Test {
 		controlPanel.setSail(null);
 
 		// call the method under test and expect exception
-		ValidationException e = assertThrows(ValidationException.class, () -> {
-			ExecuteSAIL.executeSAIL(controlPanel);
-		});
+		ValidationException e = assertThrows(ValidationException.class, () -> ExecuteSAIL.executeSAIL(controlPanel));
 
 		// verify the exception contains all the bindings
 		assertEquals(1, e.getMessages().size());

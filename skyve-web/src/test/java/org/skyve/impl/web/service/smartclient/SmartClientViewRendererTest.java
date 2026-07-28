@@ -59,4 +59,9 @@ class SmartClientViewRendererTest {
 		assertEquals(OWASP.escapeJsString(UNSAFE_TEXT),
 						SmartClientViewRenderer.escapeSmartClientText(UNSAFE_TEXT, false));
 	}
+
+	@Test
+	void escapeSmartClientTextEscapesApostropheExactlyOnce() {
+		assertEquals("O\\'Brien", SmartClientViewRenderer.escapeSmartClientText("O'Brien", false));
+	}
 }

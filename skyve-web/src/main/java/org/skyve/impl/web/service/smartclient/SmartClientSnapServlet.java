@@ -36,8 +36,8 @@ import org.skyve.persistence.DocumentQuery;
 import org.skyve.persistence.Persistence;
 import org.skyve.util.OWASP;
 import org.skyve.util.Util;
-import org.slf4j.Logger;
 import org.skyve.util.logging.SkyveLoggerFactory;
+import org.slf4j.Logger;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -219,7 +219,7 @@ public class SmartClientSnapServlet extends HttpServlet {
 	 */
 	static void appendUnexpectedWarning(String reference, PrintWriter pw) {
 		pw.append("The Snapshot operation was unsuccessful. ");
-		pw.append(WebErrorUtil.escapeJsString(WebErrorUtil.genericMessage(reference)));
+		pw.append(WebErrorUtil.escapeJsStringWithHtmlFormatting(WebErrorUtil.genericMessage(reference)));
 	}
 
 	/**
@@ -250,8 +250,8 @@ public class SmartClientSnapServlet extends HttpServlet {
 		sb.append('[');
 		List<Bean> results = q.projectedResults();
 		for (Bean bean : results) {
-			String escapedCode = OWASP.escapeJsString((String) BindUtil.get(bean, Bean.DOCUMENT_ID));
-			String escapedDescription = OWASP.escapeJsString((String) BindUtil.get(bean, AppConstants.NAME_ATTRIBUTE_NAME));
+			String escapedCode = OWASP.escapeJsStringWithHtmlFormatting((String) BindUtil.get(bean, Bean.DOCUMENT_ID));
+			String escapedDescription = OWASP.escapeJsStringWithHtmlFormatting((String) BindUtil.get(bean, AppConstants.NAME_ATTRIBUTE_NAME));
 			String snapshot = (String) BindUtil.get(bean, AppConstants.SNAPSHOT_ATTRIBUTE_NAME);
 
 			snapshot = smartClientRequest ? SnapshotAdapter.toSmartClient(snapshot) : SnapshotAdapter.toVue(snapshot);

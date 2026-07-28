@@ -2,8 +2,8 @@ package org.skyve.util;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -108,9 +108,47 @@ class OWASPTest {
 
 	@Test
 	@SuppressWarnings("static-method")
+	void escapeJsonStringEscapesEveryControlCharacter() {
+		for (int i = 0; i < 0x20; i++) {
+			char control = (char) i;
+			String expected = switch (control) {
+				case '\b' -> "\\b";
+				case '\f' -> "\\f";
+				case '\n' -> "\\n";
+				case '\r' -> "\\r";
+				case '\t' -> "\\t";
+				default -> String.format("\\u%04x", Integer.valueOf(control));
+			};
+			assertEquals(expected, OWASP.escapeJsonString(String.valueOf(control)), "U+" + Integer.toHexString(i));
+		}
+	}
+
+	@Test
+	@SuppressWarnings("static-method")
+	void escapeJsonStringPreservesValidUnicodeHtmlAndApostrophes() {
+		String value = "O'Brien <b>café</b> \u2028 \u2029 \ud834\udd1e";
+
+		assertEquals(value, OWASP.escapeJsonString(value));
+	}
+
+	@Test
+	@SuppressWarnings("static-method")
+	void escapeJsEscapesJavaScriptStringContent() {
+		assertEquals("O\\'Brien \\\"line\\nnext\\\" <\\/script>",
+						OWASP.escapeJsString("O'Brien \"line\nnext\" </script>"));
+	}
+
+	@Test
+	@SuppressWarnings("static-method")
+	void escapeJsPreservesNull() {
+		assertNull(OWASP.escapeJsString(null));
+	}
+
+	@Test
+	@SuppressWarnings("static-method")
 	void testEscapeJsString() {
 		String js = "Hello 'World'\nNew Line";
-		String result = OWASP.escapeJsString(js);
+		String result = OWASP.escapeJsStringWithHtmlFormatting(js);
 		assertThat("JS string should be properly escaped", result, is("Hello \\'World\\'<br/>New Line"));
 	}
 
@@ -118,7 +156,7 @@ class OWASPTest {
 	@SuppressWarnings("static-method")
 	void testEscapeJsStringWithoutNewlines() {
 		String js = "Hello 'World'\nNew Line";
-		String result = OWASP.escapeJsString(js, true, false);
+		String result = OWASP.escapeJsStringWithHtmlFormatting(js, true, false);
 		assertThat("JS string should be escaped without newlines", result, is("Hello \\'World\\'New Line"));
 	}
 
@@ -126,7 +164,7 @@ class OWASPTest {
 	@SuppressWarnings("static-method")
 	void testEscapeJsStringWithoutQuotes() {
 		String js = "Hello \"World\"\nNew Line";
-		String result = OWASP.escapeJsString(js, false, true);
+		String result = OWASP.escapeJsStringWithHtmlFormatting(js, false, true);
 		assertThat("JS string should be escaped without quotes", result, is("Hello \"World\"<br/>New Line"));
 	}
 
@@ -170,27 +208,27 @@ class OWASPTest {
 	@Test
 	@SuppressWarnings("static-method")
 	void testEscapeJsStringNullReturnsNull() {
-		assertNull(OWASP.escapeJsString(null, true, true));
+		assertNull(OWASP.escapeJsStringWithHtmlFormatting(null, true, true));
 	}
 
 	@Test
 	@SuppressWarnings("static-method")
 	void testEscapeJsStringNoDoubleQuotesNoNewlines() {
-		String result = OWASP.escapeJsString("say \"hello\"\nworld", false, false);
+		String result = OWASP.escapeJsStringWithHtmlFormatting("say \"hello\"\nworld", false, false);
 		assertThat(result, is("say \"hello\"world"));
 	}
 
 	@Test
 	@SuppressWarnings("static-method")
 	void testEscapeJsStringEscapeDoubleQuotesNoNewlines() {
-		String result = OWASP.escapeJsString("say \"hello\"\nworld", true, false);
+		String result = OWASP.escapeJsStringWithHtmlFormatting("say \"hello\"\nworld", true, false);
 		assertThat(result, is("say &quot;hello&quot;world"));
 	}
 
 	@Test
 	@SuppressWarnings("static-method")
 	void testEscapeJsStringEscapeNewlinesNoDoubleQuotes() {
-		String result = OWASP.escapeJsString("hello\nworld", false, true);
+		String result = OWASP.escapeJsStringWithHtmlFormatting("hello\nworld", false, true);
 		assertThat(result, is("hello<br/>world"));
 	}
 

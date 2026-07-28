@@ -418,7 +418,7 @@ public class ImageMarkupView extends LocalisableView {
 		js.append("skyveMarkupWindow.isc.BizUtil.afterMarkupApply('").append(sanitisedContentBinding);
 		js.append("','").append(contentId).append("','");
 		js.append(bean.getBizModule()).append('.').append(bean.getBizDocument()).append("','");
-		js.append(OWASP.escapeJsString(content.getFileName(), false, false)).append("');");
+		js.append(OWASP.escapeJsStringWithHtmlFormatting(content.getFileName(), false, false)).append("');");
 		js.append("}else{");
 		js.append("skyveMarkupWindow.isc.WindowStack.getOpener()._vm.setValue('").append(sanitisedContentBinding);
 		js.append("','").append(contentId).append("');skyveMarkupWindow.isc.WindowStack.popoff(false)");
@@ -427,7 +427,7 @@ public class ImageMarkupView extends LocalisableView {
 		js.append("}else if(skyveMarkupWindow.SKYVE){if(skyveMarkupWindow.SKYVE.PF){skyveMarkupWindow.SKYVE.PF.afterMarkupApply('").append(sanitisedContentBinding);
 		js.append("','").append(contentId).append("','");
 		js.append(bean.getBizModule()).append('.').append(bean.getBizDocument()).append("','");
-		js.append(OWASP.escapeJsString(content.getFileName(), false, false)).append("')}}");
+		js.append(OWASP.escapeJsStringWithHtmlFormatting(content.getFileName(), false, false)).append("')}}");
 		js.append('}');
 		return js.toString();
 	}

@@ -60,7 +60,7 @@ public class StringFormatter implements Formatter<String> {
 			result = OWASP.escapeJsonString(result);
 		}
 		if (escapeJS) {
-			result = OWASP.escapeJsString(result);
+			result = OWASP.escapeJsStringWithHtmlFormatting(result);
 		}
 		
 		return result;

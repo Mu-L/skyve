@@ -23,7 +23,7 @@ public abstract class AbstractPrimeFacesInterpretedSail extends AbstractH2Test {
 	private BrowserConfiguration configuration;
 	@Nonnull protected PrimeFacesSelenide selenium = new PrimeFacesSelenide();
 	
-	public AbstractPrimeFacesInterpretedSail(@Nonnull BrowserConfiguration configuration) {
+	protected AbstractPrimeFacesInterpretedSail(@Nonnull BrowserConfiguration configuration) {
 		this.configuration = configuration;
 	}
 	
@@ -58,11 +58,8 @@ public abstract class AbstractPrimeFacesInterpretedSail extends AbstractH2Test {
 	}
 	
 	private void sail(Automation automation) {
-		FacesUtil.setSailFacesContextIfNeeded();
-		try {
+		try (FacesUtil.SailFacesContextScope ignored = FacesUtil.withSailFacesContextIfNeeded()) {
 			automation.execute(new PrimeFacesInterpretedWebDriverExecutor(selenium));
-		} finally {
-			FacesUtil.resetSailFacesContextIfNeeded();
 		}
 	}
 }

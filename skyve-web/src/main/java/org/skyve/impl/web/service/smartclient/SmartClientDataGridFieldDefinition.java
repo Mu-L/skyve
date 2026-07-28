@@ -91,7 +91,7 @@ public class SmartClientDataGridFieldDefinition extends SmartClientAttributeDefi
 								AttributeType.longInteger.equals(attributeType))) {
 					defaultValueJavascriptExpression = new StringBuilder(128)
 																.append('\'')
-																.append(OWASP.escapeJsString(defaultValueJavascriptExpression, false, false))
+																.append(OWASP.escapeJsStringWithHtmlFormatting(defaultValueJavascriptExpression, false, false))
 																.append('\'')
 																.toString();
 				}

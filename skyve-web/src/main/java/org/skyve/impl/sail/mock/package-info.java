@@ -1,6 +1,6 @@
 /**
- * Provides mock JSF runtime infrastructure for SAIL execution tests outside a servlet container.
+ * Provides reusable JSF runtime test support for SAIL execution and downstream view tests.
  *
- * <p>Types in this package are internal implementation details for the web module.
+ * <p>Contexts can run with mutable in-memory state or delegate to servlet request and response test doubles.
  */
 package org.skyve.impl.sail.mock;

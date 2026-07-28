@@ -26,8 +26,8 @@ import org.skyve.metadata.view.View;
 import org.skyve.metadata.view.View.ViewType;
 import org.skyve.util.OWASP;
 import org.skyve.util.Util;
-import org.slf4j.Logger;
 import org.skyve.util.logging.SkyveLoggerFactory;
+import org.slf4j.Logger;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -180,33 +180,33 @@ public class SmartClientGeneratorServlet extends HttpServlet {
 				if (iconStyleClass == null) {
 					iconStyleClass = document.getIconStyleClass();
 					if (iconStyleClass != null) {
-						pw.append("',_editFontIcon:'").append(OWASP.escapeJsString(iconStyleClass));
+						pw.append("',_editFontIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(iconStyleClass));
 					}
 					else {
 						String icon32 = editView.getIcon32x32RelativeFileName();
 						if (icon32 == null) {
 							icon32 = document.getIcon32x32RelativeFileName();
 							if (icon32 != null) {
-								pw.append("',_editIcon:'").append(OWASP.escapeJsString(icon32));
+								pw.append("',_editIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(icon32));
 							}
 						}
 						else { 
-							pw.append("',_editIcon:'").append(OWASP.escapeJsString(icon32));
+							pw.append("',_editIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(icon32));
 						}
 					}
 				}
 				else {
-					pw.append("',_editFontIcon:'").append(OWASP.escapeJsString(iconStyleClass));
+					pw.append("',_editFontIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(iconStyleClass));
 				}
 
 				String help = editView.getHelpRelativeFileName();
 				if (help != null) {
-					pw.append("',_editHelpFile:'").append(OWASP.escapeJsString(help));
+					pw.append("',_editHelpFile:'").append(OWASP.escapeJsStringWithHtmlFormatting(help));
 				}
 				else {
 					help = editView.getHelpURL();
 					if (help != null) {
-						pw.append("',_editHelpURL:'").append(OWASP.escapeJsString(help));
+						pw.append("',_editHelpURL:'").append(OWASP.escapeJsStringWithHtmlFormatting(help));
 					}
 				}
 
@@ -215,37 +215,37 @@ public class SmartClientGeneratorServlet extends HttpServlet {
 				if (iconStyleClass == null) {
 					iconStyleClass = document.getIconStyleClass();
 					if (iconStyleClass != null) {
-						pw.append("',_createFontIcon:'").append(OWASP.escapeJsString(iconStyleClass));
+						pw.append("',_createFontIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(iconStyleClass));
 					}
 					else {
 						String icon32 = createView.getIcon32x32RelativeFileName();
 						if (icon32 == null) {
 							icon32 = document.getIcon32x32RelativeFileName();
 							if (icon32 != null) {
-								pw.append("',_createIcon:'").append(OWASP.escapeJsString(icon32));
+								pw.append("',_createIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(icon32));
 							}
 						}
 						else { 
-							pw.append("',_createIcon:'").append(OWASP.escapeJsString(icon32));
+							pw.append("',_createIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(icon32));
 						}
 					}
 				}
 				else {
-					pw.append("',_createFontIcon:'").append(OWASP.escapeJsString(iconStyleClass));
+					pw.append("',_createFontIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(iconStyleClass));
 				}
 
 				help = createView.getHelpRelativeFileName();
 				if (help != null) {
-					pw.append("',_createHelpFile:'").append(OWASP.escapeJsString(help));
+					pw.append("',_createHelpFile:'").append(OWASP.escapeJsStringWithHtmlFormatting(help));
 				}
 				else {
 					help = createView.getHelpURL();
 					if (help != null) {
-						pw.append("',_createHelpURL:'").append(OWASP.escapeJsString(help));
+						pw.append("',_createHelpURL:'").append(OWASP.escapeJsStringWithHtmlFormatting(help));
 					}
 				}
 				
-				pw.append("',_singular:'").append(OWASP.escapeJsString(document.getLocalisedSingularAlias()));
+				pw.append("',_singular:'").append(OWASP.escapeJsStringWithHtmlFormatting(document.getLocalisedSingularAlias()));
 				pw.append("',_ecnt:").append(module.getName()).append('.').append(document.getName()).append("_ecnt");
 				pw.append(",_ccnt:").append(module.getName()).append('.').append(document.getName()).append("_ccnt});");
 
@@ -286,6 +286,6 @@ public class SmartClientGeneratorServlet extends HttpServlet {
 	 */
 	static void appendUnexpectedWarning(String reference, PrintWriter pw) {
 		pw.append("Could not generate views. ");
-		pw.append(WebErrorUtil.escapeJsString(WebErrorUtil.genericMessage(reference)));
+		pw.append(WebErrorUtil.escapeJsStringWithHtmlFormatting(WebErrorUtil.genericMessage(reference)));
 	}
 }

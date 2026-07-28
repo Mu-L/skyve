@@ -62,10 +62,10 @@ import org.skyve.util.Binder.TargetMetaData;
 import org.skyve.util.OWASP;
 import org.skyve.util.Util;
 import org.skyve.util.logging.Category;
+import org.skyve.util.logging.SkyveLoggerFactory;
 import org.skyve.util.monitoring.Monitoring;
 import org.skyve.util.monitoring.RequestKey;
 import org.slf4j.Logger;
-import org.skyve.util.logging.SkyveLoggerFactory;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -509,7 +509,7 @@ public class SmartClientEditServlet extends HttpServlet {
                 pw.append("\"startRow\":0,\"endRow\":0,\"totalRows\":0,");
             }
             pw.append("\"data\":\"");
-            pw.append(WebErrorUtil.escapeJsString(WebErrorUtil.genericMessage(reference))).append('"');
+            pw.append(WebErrorUtil.escapeJsStringWithHtmlFormatting(WebErrorUtil.genericMessage(reference))).append('"');
     	}
 
     	pw.append("}}");
@@ -526,7 +526,7 @@ public class SmartClientEditServlet extends HttpServlet {
     	pw.append(synopsis).append("<br/><ul>");
     	for (Message m : ms) {
 	    	pw.append("<li>");
-	        pw.append(OWASP.escapeJsString(m.getText()));
+	        pw.append(OWASP.escapeJsStringWithHtmlFormatting(m.getText()));
 	        pw.append("</li>");
     	}
     	pw.append("</ul>");
@@ -547,7 +547,7 @@ public class SmartClientEditServlet extends HttpServlet {
 	    		result = true;
 	    		// no '.' or '[' or ']' allowed in JSON identifiers
 	    		sb.append('"').append(BindUtil.sanitiseBinding(binding)).append("\":\"");
-			sb.append(OWASP.escapeJsString(OWASP.escapeHtml(m.getText()))).append("\",");
+			sb.append(OWASP.escapeJsStringWithHtmlFormatting(OWASP.escapeHtml(m.getText()))).append("\",");
 	    	}
     	}
     	

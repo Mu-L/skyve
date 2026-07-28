@@ -1,12 +1,12 @@
 package org.skyve.impl.web.faces;
 
-import java.lang.reflect.Field;
-
 import org.primefaces.PrimeFaces;
 import org.skyve.domain.messages.DomainException;
 import org.skyve.impl.sail.mock.MockFacesContext;
 import org.skyve.util.OWASP;
 
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.el.ELContext;
 import jakarta.el.ExpressionFactory;
 import jakarta.el.MethodExpression;
@@ -21,7 +21,33 @@ import jakarta.servlet.http.HttpServletRequest;
  */
 public class FacesUtil {
 	/**
-	 * Prevent instantiation
+	 * Owns a mock Faces context installed for one SAIL execution scope.
+	 *
+	 * <p>Closing the scope releases only the context installed by that scope. A scope created while another Faces
+	 * context is active is a no-op. The scope is thread-confined and must be closed by the thread that created it.
+	 */
+	public static final class SailFacesContextScope implements AutoCloseable {
+		@SuppressWarnings("resource")
+		private @Nullable MockFacesContext context;
+
+		private SailFacesContextScope(@Nullable MockFacesContext context) {
+			this.context = context;
+		}
+
+		/**
+		 * Releases the context owned by this scope, if any.
+		 */
+		@Override
+		public void close() {
+			if (context != null) {
+				context.close();
+				context = null;
+			}
+		}
+	}
+
+	/**
+	 * Prevents utility-class instantiation.
 	 */
 	private FacesUtil() {
 		// nothing to see here
@@ -44,11 +70,11 @@ public class FacesUtil {
 	/**
 	 * Resolves a named JSF-managed bean from the active EL context.
 	 *
-	 * @param name the EL bean name
-	 * @return the resolved bean instance
+	 * @param name the EL bean name; must not be {@code null}
+	 * @return the resolved bean instance; never {@code null}
 	 * @throws FacesException if no bean with the supplied name is available
 	 */
-	public static Object getNamed(final String name) {
+	public static @Nonnull Object getNamed(final @Nonnull String name) {
 		FacesContext fc = FacesContext.getCurrentInstance();
 		ELContext elContext = fc.getELContext();
 		Object result = elContext.getELResolver().getValue(elContext, null, name);
@@ -64,10 +90,10 @@ public class FacesUtil {
 	/**
 	 * Assigns a value into an EL target expression.
 	 *
-	 * @param value the value to assign
-	 * @param valueExpression the target EL expression
+	 * @param value the value to assign; may be {@code null}
+	 * @param valueExpression the target EL expression; must not be {@code null}
 	 */
-	public static void set(final Object value, final String valueExpression) {
+	public static void set(final @Nullable Object value, final @Nonnull String valueExpression) {
 		FacesContext facesContext = FacesContext.getCurrentInstance();
 		ELContext elContext = facesContext.getELContext();
 		ExpressionFactory ef = facesContext.getApplication().getExpressionFactory();
@@ -79,12 +105,14 @@ public class FacesUtil {
 	/**
 	 * Creates a method expression bound to the active JSF EL context.
 	 *
-	 * @param expression the method expression text
-	 * @param expectedReturnType the expected return type
-	 * @param expectedParamTypes the expected parameter types
-	 * @return the compiled method expression
+	 * @param expression the method expression text; must not be {@code null}
+	 * @param expectedReturnType the expected return type; must not be {@code null}
+	 * @param expectedParamTypes the expected parameter types; must not be {@code null}
+	 * @return the compiled method expression; never {@code null}
 	 */
-	public static MethodExpression createMethodExpression(String expression, Class<?> expectedReturnType, Class<?>[] expectedParamTypes) {
+	public static @Nonnull MethodExpression createMethodExpression(@Nonnull String expression,
+																	@Nonnull Class<?> expectedReturnType,
+																	@Nonnull Class<?>[] expectedParamTypes) {
 		try {
 			FacesContext fc = FacesContext.getCurrentInstance();
 			ExpressionFactory factory = fc.getApplication().getExpressionFactory();
@@ -100,10 +128,10 @@ public class FacesUtil {
 	 *
 	 * Use this only when there may be no faces context (ie view has expired)
 	 * otherwise should use FacesContext.getCurrentInstance().getExternalContext().redirect();
-	 * @param url the redirect destination
-	 * @return XML partial-response text containing a redirect instruction
+	 * @param url the redirect destination; must not be {@code null}
+	 * @return XML partial-response text containing a redirect instruction; never {@code null}
 	 */
-	public static String xmlPartialRedirect(String url) {
+	public static @Nonnull String xmlPartialRedirect(@Nonnull String url) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("<?xml version='1.0' encoding='UTF-8'?>");
 		sb.append("<partial-response><redirect url=\"").append(url.replace("&", "&amp;")).append("\"/></partial-response>");
@@ -113,10 +141,10 @@ public class FacesUtil {
 	/**
 	 * Indicates whether the request originated from an XMLHttpRequest call.
 	 *
-	 * @param request the incoming servlet request
+	 * @param request the incoming servlet request; must not be {@code null}
 	 * @return {@code true} when the XHR request header is present
 	 */
-	public static boolean isAjax(HttpServletRequest request) {
+	public static boolean isAjax(@Nonnull HttpServletRequest request) {
 		return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
 	}
 
@@ -134,10 +162,10 @@ public class FacesUtil {
 	/**
 	 * Executes a client-side JavaScript redirect via PrimeFaces.
 	 *
-	 * @param url the redirect destination URL
+	 * @param url the redirect destination URL; must not be {@code null}
 	 */
-	public static void jsRedirect(String url) {
-		PrimeFaces.current().executeScript("window.location='" + OWASP.escapeJsString(url) + "'");
+	public static void jsRedirect(@Nonnull String url) {
+		PrimeFaces.current().executeScript("window.location='" + OWASP.escapeJsStringWithHtmlFormatting(url) + "'");
 	}
 
 	/**
@@ -146,9 +174,11 @@ public class FacesUtil {
 	 * <p>This helper exists because JSF component types do not expose a shared style-class contract through a
 	 * common interface.
 	 *
+	 * @param component the component to update, or {@code null} to do nothing
+	 * @param styleClass the style class to assign; may be {@code null}
 	 * @throws DomainException when the target component type does not expose a compatible setter
 	 */
-	public static void setStyleCLass(UIComponent component, String styleClass) {
+	public static void setStyleCLass(@Nullable UIComponent component, @Nullable String styleClass) {
 		if (component != null) {
 			try {
 				component.getClass().getMethod(SET_STYLE_CLASS_METHOD_NAME, String.class).invoke(component, styleClass);
@@ -160,48 +190,17 @@ public class FacesUtil {
 	}
 
 	/**
-	 * Installs a mock FacesContext for the current thread when SAIL execution is running outside a real JSF request.
+	 * Opens an ownership-aware mock Faces-context scope for SAIL execution.
 	 *
-	 * <p>Side effects: mutates the thread-local {@link FacesContext} holder used by JSF so that SAIL view
-	 * traversal can execute component-building code paths without an active servlet-driven Faces lifecycle.
-	 */
-	@SuppressWarnings("java:S3011") // reflection is required to access the private FacesContext.instance field for SAIL mocking
-	public static void setSailFacesContextIfNeeded() {
-		try {
-			if (FacesContext.getCurrentInstance() == null) {
-				Field instanceField = FacesContext.class.getDeclaredField("instance");
-				instanceField.setAccessible(true);
-				@SuppressWarnings("unchecked")
-				ThreadLocal<FacesContext> instance = (ThreadLocal<FacesContext>) instanceField.get(null);
-				instance.set(new MockFacesContext());
-			}
-		}
-		catch (Exception e) {
-			throw new DomainException("Cannot set mock SAIL faces context", e);
-		}
-	}
-
-	/**
-	 * Removes the mock SAIL FacesContext from the current thread when one was installed earlier.
+	 * <p>If no Faces context is active, this method installs a {@link MockFacesContext} which is released when the
+	 * returned scope closes. If a context is already active, the returned scope leaves it untouched.
 	 *
-	 * <p>Side effects: clears the JSF thread-local {@link FacesContext} only when the active context is the
-	 * mock SAIL implementation.
+	 * @return a scope which must be closed by the current thread
 	 */
-	@SuppressWarnings("java:S3011") // reflection is required to access the private FacesContext.instance field for SAIL mocking
-	public static void resetSailFacesContextIfNeeded() {
-		try {
-			FacesContext fc = FacesContext.getCurrentInstance();
-			if (fc instanceof MockFacesContext) {
-				Field instanceField = FacesContext.class.getDeclaredField("instance");
-				instanceField.setAccessible(true);
-				@SuppressWarnings("unchecked")
-				ThreadLocal<FacesContext> instance = (ThreadLocal<FacesContext>) instanceField.get(null);
-				instance.remove();
-			}
-		}
-		catch (Exception e) {
-			throw new DomainException("Cannot reset mock faces context", e);
-		}
+	@SuppressWarnings("resource")
+	public static @Nonnull SailFacesContextScope withSailFacesContextIfNeeded() {
+		MockFacesContext context = FacesContext.getCurrentInstance() == null ? MockFacesContext.get() : null;
+		return new SailFacesContextScope(context);
 	}
 
 	/**

@@ -495,7 +495,7 @@ public class DesktopView extends HarnessView {
 				result.append(menuModule.getName());
 				result.append("',");
 				result.append("title:'");
-				result.append(OWASP.escapeJsString(menuModule.getLocalisedTitle()));
+				result.append(OWASP.escapeJsStringWithHtmlFormatting(menuModule.getLocalisedTitle()));
 				result.append("',");
 			}
 			
@@ -505,7 +505,7 @@ public class DesktopView extends HarnessView {
 			@Override
 			public void renderMenuRoot(Menu menu, Module menuModule) {
 				result.append("root:{name:'");
-				result.append(OWASP.escapeJsString(menuModule.getName()));
+				result.append(OWASP.escapeJsStringWithHtmlFormatting(menuModule.getName()));
 				result.append("',sub:[");
 			}
 			
@@ -515,7 +515,7 @@ public class DesktopView extends HarnessView {
 			@Override
 			public void renderMenuGroup(MenuGroup group, Module menuModule) {
 				result.append("{desc:'");
-				result.append(OWASP.escapeJsString(group.getLocalisedName()));
+				result.append(OWASP.escapeJsStringWithHtmlFormatting(group.getLocalisedName()));
 				result.append("', sub:[");
 			}
 			
@@ -641,18 +641,18 @@ public class DesktopView extends HarnessView {
 				if ((icon16 != null) || (iconStyleClass != null)) {
 					result.append("<span> &nbsp;</span>");
 				}
-				result.append(OWASP.escapeJsString(name)).append('\'');
+				result.append(OWASP.escapeJsStringWithHtmlFormatting(name)).append('\'');
 				if (config != null) {
 					result.append(",config:").append(config);
 				}
-				result.append(",ref:'").append(OWASP.escapeJsString(ref));
+				result.append(",ref:'").append(OWASP.escapeJsStringWithHtmlFormatting(ref));
 				if ((iconStyleClass == null) && (icon16 != null)) {
 					result.append("',icon:'../resources?");
 					if ((itemModule != null) && (itemDocument != null)) { // NB link items have no document
-						result.append("_doc=").append(OWASP.escapeJsString(itemModule.getName())).append('.')
-								.append(OWASP.escapeJsString(itemDocument.getName())).append('&');
+						result.append("_doc=").append(OWASP.escapeJsStringWithHtmlFormatting(itemModule.getName())).append('.')
+								.append(OWASP.escapeJsStringWithHtmlFormatting(itemDocument.getName())).append('&');
 					}
-					result.append("_n=").append(OWASP.escapeJsString(icon16));
+					result.append("_n=").append(OWASP.escapeJsStringWithHtmlFormatting(icon16));
 				}
 				result.append("'},");
 			}

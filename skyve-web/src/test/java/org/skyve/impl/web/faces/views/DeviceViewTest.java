@@ -3,33 +3,19 @@ package org.skyve.impl.web.faces.views;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import jakarta.faces.context.ExternalContext;
-import jakarta.faces.context.FacesContext;
+import org.skyve.impl.sail.mock.MockFacesContext;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 @SuppressWarnings({"static-method", "java:S1192", "java:S3011"})
 class DeviceViewTest {
-	private abstract static class FacesContextBridge extends FacesContext {
-		static void setCurrent(FacesContext context) {
-			setCurrentInstance(context);
-		}
-	}
-
-	@AfterEach
-	void clearFacesContext() {
-		FacesContextBridge.setCurrent(null);
-	}
-
 	@Test
 	void postConstructBuildsDeviceCommandPreviewPrefix() throws Exception {
 		DeviceView view = initialise(Map.of(
@@ -69,16 +55,18 @@ class DeviceViewTest {
 
 	private static DeviceView initialise(Map<String, String[]> params, Locale locale) throws Exception {
 		DeviceView view = new DeviceView();
-		FacesContext context = mock(FacesContext.class);
-		ExternalContext externalContext = mock(ExternalContext.class);
-		when(context.getExternalContext()).thenReturn(externalContext);
-		when(externalContext.getRequestParameterValuesMap()).thenReturn(params);
-		when(externalContext.getRequestLocale()).thenReturn(locale);
-		FacesContextBridge.setCurrent(context);
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		for (Map.Entry<String, String[]> entry : params.entrySet()) {
+			request.setParameter(entry.getKey(), entry.getValue());
+		}
+		request.setPreferredLocales(java.util.List.of(locale));
 
-		Method postConstruct = DeviceView.class.getDeclaredMethod("postConstruct");
-		postConstruct.setAccessible(true);
-		postConstruct.invoke(view);
+		try (MockFacesContext ignored = MockFacesContext.get(request, response)) {
+			Method postConstruct = DeviceView.class.getDeclaredMethod("postConstruct");
+			postConstruct.setAccessible(true);
+			postConstruct.invoke(view);
+		}
 		return view;
 	}
 }
