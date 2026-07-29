@@ -6,6 +6,9 @@ import java.nio.charset.StandardCharsets;
 import org.skyve.content.Disposition;
 import org.skyve.content.MimeType;
 
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
 /**
  * Represents a file to be streamed to the browser as a download.
  *
@@ -21,117 +24,147 @@ import org.skyve.content.MimeType;
  * @see WebFileInputStream
  */
 public class Download {
-	private String fileName;
-	private WebFileInputStream stream;
-	private File file;
-	private byte[] bytes;
-	private MimeType mimeType;
-	private Disposition disposition;
-	
-	private Download(String fileName, MimeType mimeType, Disposition disposition) {
+	private final @Nonnull String fileName;
+	@SuppressWarnings("resource")
+	private final @Nullable WebFileInputStream stream;
+	private final @Nullable File file;
+	private final @Nullable byte[] bytes;
+	private final @Nonnull MimeType mimeType;
+	private final @Nullable Disposition disposition;
+
+	/**
+	 * Initialises a download with its metadata and content source.
+	 *
+	 * <p>Invariant: public constructors supply exactly one of {@code stream}, {@code file},
+	 * or {@code bytes}; the other content sources are {@code null}.
+	 *
+	 * @param fileName the suggested browser file name
+	 * @param stream the lifecycle-managed content stream, or {@code null} for another content source
+	 * @param file the file to stream, or {@code null} for another content source
+	 * @param bytes the buffered content, or {@code null} for another content source
+	 * @param mimeType the content MIME type
+	 * @param disposition the content disposition, or {@code null} to use the response writer's default
+	 */
+	private Download(@Nonnull String fileName,
+						@Nullable WebFileInputStream stream,
+						@Nullable File file,
+						@Nullable byte[] bytes,
+						@Nonnull MimeType mimeType,
+						@Nullable Disposition disposition) {
 		this.fileName = fileName;
+		this.stream = stream;
+		this.file = file;
+		this.bytes = bytes;
 		this.mimeType = mimeType;
 		this.disposition = disposition;
 	}
 
 	/**
-	 * byte[] constructor
-	 * 
-	 * @param fileName
-	 * @param bytes
-	 * @param mimeType
-	 * @param disposition
+	 * Creates a download backed by the supplied bytes.
+	 *
+	 * @param fileName the suggested browser file name
+	 * @param bytes the file content
+	 * @param mimeType the content MIME type
+	 * @param disposition the content disposition, or {@code null} to use the response writer's default
 	 */
-	public Download(String fileName, byte[] bytes, MimeType mimeType, Disposition disposition) {
-		this(fileName, mimeType, disposition);
-		this.bytes = bytes;
+	public Download(@Nonnull String fileName,
+						@Nonnull byte[] bytes,
+						@Nonnull MimeType mimeType,
+						@Nonnull Disposition disposition) {
+		this(fileName, null, null, bytes, mimeType, disposition);
 	}
 
 	/**
-	 * byte[] constructor
-	 * 
-	 * @param fileName
-	 * @param bytes
-	 * @param mimeType
+	 * Creates an attachment download backed by the supplied bytes.
+	 *
+	 * @param fileName the suggested browser file name
+	 * @param bytes the file content
+	 * @param mimeType the content MIME type
 	 */
-	public Download(String fileName, byte[] bytes, MimeType mimeType) {
-		this(fileName, mimeType, Disposition.attachment);
-		this.bytes = bytes;
+	public Download(@Nonnull String fileName, @Nonnull byte[] bytes, @Nonnull MimeType mimeType) {
+		this(fileName, bytes, mimeType, Disposition.attachment);
 	}
 
 	/**
-	 * String constructor
-	 * 
-	 * @param fileName
-	 * @param bytes
-	 * @param mimeType
-	 * @param disposition
+	 * Creates a UTF-8 encoded download backed by the supplied text.
+	 *
+	 * @param fileName the suggested browser file name
+	 * @param content the text content to encode as UTF-8
+	 * @param mimeType the content MIME type
+	 * @param disposition the content disposition, or {@code null} to use the response writer's default
 	 */
-	public Download(String fileName, String content, MimeType mimeType, Disposition disposition) {
-		this(fileName, mimeType, disposition);
-		this.bytes = content.getBytes(StandardCharsets.UTF_8);
+	public Download(@Nonnull String fileName,
+						@Nonnull String content,
+						@Nonnull MimeType mimeType,
+						@Nonnull Disposition disposition) {
+		this(fileName, content.getBytes(StandardCharsets.UTF_8), mimeType, disposition);
 	}
 
 	/**
-	 * byte[] constructor
-	 * 
-	 * @param fileName
-	 * @param bytes
-	 * @param mimeType
+	 * Creates a UTF-8 encoded attachment download backed by the supplied text.
+	 *
+	 * @param fileName the suggested browser file name
+	 * @param content the text content to encode as UTF-8
+	 * @param mimeType the content MIME type
 	 */
-	public Download(String fileName, String content, MimeType mimeType) {
-		this(fileName, mimeType, Disposition.attachment);
-		this.bytes = content.getBytes(StandardCharsets.UTF_8);
+	public Download(@Nonnull String fileName, @Nonnull String content, @Nonnull MimeType mimeType) {
+		this(fileName, content, mimeType, Disposition.attachment);
 	}
 
 	/**
-	 * File constructor
-	 * 
-	 * @param fileName
-	 * @param file
-	 * @param mimeType
-	 * @param disposition
+	 * Creates a download backed by a file.
+	 *
+	 * @param fileName the suggested browser file name
+	 * @param file the file to stream
+	 * @param mimeType the content MIME type
+	 * @param disposition the content disposition, or {@code null} to use the response writer's default
 	 */
-	public Download(String fileName, File file, MimeType mimeType, Disposition disposition) {
-		this(fileName, mimeType, disposition);
-		this.file = file;
+	public Download(@Nonnull String fileName,
+						@Nonnull File file,
+						@Nonnull MimeType mimeType,
+						@Nonnull Disposition disposition) {
+		this(fileName, null, file, null, mimeType, disposition);
 	}
 
 	/**
-	 * File constructor
-	 * 
-	 * @param fileName
-	 * @param file
-	 * @param mimeType
+	 * Creates an attachment download backed by a file.
+	 *
+	 * @param fileName the suggested browser file name
+	 * @param file the file to stream
+	 * @param mimeType the content MIME type
 	 */
-	public Download(String fileName, File file, MimeType mimeType) {
-		this(fileName, mimeType, Disposition.attachment);
-		this.file = file;
+	public Download(@Nonnull String fileName, @Nonnull File file, @Nonnull MimeType mimeType) {
+		this(fileName, file, mimeType, Disposition.attachment);
 	}
 
 	/**
-	 * Stream constructor (note that DownloadInputStream will not be closed until download processing has occurred)
-	 * 
-	 * @param fileName
-	 * @param stream
-	 * @param mimeType
-	 * @param disposition
+	 * Creates a download backed by a lifecycle-managed stream.
+	 *
+	 * <p>The stream is not closed until download processing has completed.
+	 *
+	 * @param fileName the suggested browser file name
+	 * @param stream the stream containing the file content
+	 * @param mimeType the content MIME type
+	 * @param disposition the content disposition, or {@code null} to use the response writer's default
 	 */
-	public Download(String fileName, WebFileInputStream stream, MimeType mimeType, Disposition disposition) {
-		this(fileName, mimeType, disposition);
-		this.stream = stream;
+	public Download(@Nonnull String fileName,
+						@Nonnull WebFileInputStream stream,
+						@Nonnull MimeType mimeType,
+						@Nonnull Disposition disposition) {
+		this(fileName, stream, null, null, mimeType, disposition);
 	}
 
 	/**
-	 * Stream constructor (note that DownloadInputStream will not be closed until download processing has occurred)
-	 * 
-	 * @param fileName
-	 * @param is
-	 * @param mimeType
+	 * Creates an attachment download backed by a lifecycle-managed stream.
+	 *
+	 * <p>The stream is not closed until download processing has completed.
+	 *
+	 * @param fileName the suggested browser file name
+	 * @param stream the stream containing the file content
+	 * @param mimeType the content MIME type
 	 */
-	public Download(String fileName, WebFileInputStream stream, MimeType mimeType) {
-		this(fileName, mimeType, Disposition.attachment);
-		this.stream = stream;
+	public Download(@Nonnull String fileName, @Nonnull WebFileInputStream stream, @Nonnull MimeType mimeType) {
+		this(fileName, stream, mimeType, Disposition.attachment);
 	}
 	
 	/**
@@ -139,7 +172,7 @@ public class Download {
 	 *
 	 * @return file name; never {@code null}
 	 */
-	public String getFileName() {
+	public @Nonnull String getFileName() {
 		return fileName;
 	}
 
@@ -148,7 +181,7 @@ public class Download {
 	 *
 	 * @return the content bytes, or {@code null} if the content source is a {@link File} or stream
 	 */
-	public byte[] getBytes() {
+	public @Nullable byte[] getBytes() {
 		return bytes;
 	}
 
@@ -157,7 +190,7 @@ public class Download {
 	 *
 	 * @return the file, or {@code null} if the content source is bytes or a stream
 	 */
-	public File getFile() {
+	public @Nullable File getFile() {
 		return file;
 	}
 
@@ -166,7 +199,7 @@ public class Download {
 	 *
 	 * @return the stream, or {@code null} if the content source is bytes or a file
 	 */
-	public WebFileInputStream getInputStream() {
+	public @Nullable WebFileInputStream getInputStream() {
 		return stream;
 	}
 
@@ -175,7 +208,7 @@ public class Download {
 	 *
 	 * @return the MIME type; never {@code null}
 	 */
-	public MimeType getMimeType() {
+	public @Nonnull MimeType getMimeType() {
 		return mimeType;
 	}
 
@@ -184,7 +217,7 @@ public class Download {
 	 *
 	 * @return the disposition; defaults to {@link org.skyve.content.Disposition#attachment}
 	 */
-	public Disposition getDisposition() {
+	public @Nullable Disposition getDisposition() {
 		return disposition;
 	}
 }

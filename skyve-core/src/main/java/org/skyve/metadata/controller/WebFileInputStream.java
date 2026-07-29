@@ -4,6 +4,8 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import jakarta.annotation.Nonnull;
+
 /**
  * Defers physical stream closure until Skyve marks the stream as processed.
  *
@@ -23,7 +25,7 @@ public class WebFileInputStream extends FilterInputStream {
 	 * Creates a new WebFileInputStream instance.
 	 * @param in the in
 	 */
-	public WebFileInputStream(InputStream in) {
+	public WebFileInputStream(@Nonnull InputStream in) {
 		super(in);
 	}
 	

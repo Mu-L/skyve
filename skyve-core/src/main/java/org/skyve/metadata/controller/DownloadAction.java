@@ -4,6 +4,8 @@ import org.skyve.domain.Bean;
 import org.skyve.metadata.MetaData;
 import org.skyve.web.WebContext;
 
+import jakarta.annotation.Nonnull;
+
 /**
  * A two-phase action contract that streams a generated file to the browser.
  *
@@ -36,7 +38,7 @@ public abstract class DownloadAction<T extends Bean> implements MetaData {
 	 * @param webContext	The context to manipulate.
 	 * @throws Exception
 	 */
-	public abstract void prepare(T bean, WebContext webContext) throws Exception;
+	public abstract void prepare(@Nonnull T bean, @Nonnull WebContext webContext) throws Exception;
 	
 	/**
 	 * Called to get the download stream/file.
@@ -48,5 +50,5 @@ public abstract class DownloadAction<T extends Bean> implements MetaData {
 	 * @return file	The file to process.
 	 * @throws Exception
 	 */
-	public abstract Download download(T bean, WebContext webContext) throws Exception;
+	public abstract @Nonnull Download download(@Nonnull T bean, @Nonnull WebContext webContext) throws Exception;
 }

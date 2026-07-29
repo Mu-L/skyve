@@ -2,6 +2,9 @@ package org.skyve.metadata.controller;
 
 import org.skyve.content.MimeType;
 
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
 /**
  * Carries an uploaded file from the browser to an {@link UploadAction}.
  *
@@ -13,9 +16,10 @@ import org.skyve.content.MimeType;
  * @see WebFileInputStream
  */
 public class Upload {
-	private String fileName;
-	private WebFileInputStream stream;
-	private MimeType mimeType;
+	private @Nonnull String fileName;
+	@SuppressWarnings("resource")
+	private @Nonnull WebFileInputStream stream;
+	private @Nullable MimeType mimeType;
 	
 	/**
 	 * Constructor
@@ -23,7 +27,7 @@ public class Upload {
 	 * @param stream
 	 * @param mimeType
 	 */
-	public Upload(String fileName, WebFileInputStream stream, MimeType mimeType) {
+	public Upload(@Nonnull String fileName, @Nonnull WebFileInputStream stream, @Nullable MimeType mimeType) {
 		this.fileName = fileName;
 		this.stream = stream;
 		this.mimeType = mimeType;
@@ -34,7 +38,7 @@ public class Upload {
 	 *
 	 * @return file name; never {@code null}
 	 */
-	public String getFileName() {
+	public @Nonnull String getFileName() {
 		return fileName;
 	}
 
@@ -46,7 +50,7 @@ public class Upload {
 	 *
 	 * @return the upload stream; never {@code null}
 	 */
-	public WebFileInputStream getInputStream() {
+	public @Nonnull WebFileInputStream getInputStream() {
 		return stream;
 	}
 
@@ -55,7 +59,7 @@ public class Upload {
 	 *
 	 * @return the MIME type; may be {@code null} if the browser did not report one
 	 */
-	public MimeType getMimeType() {
+	public @Nullable MimeType getMimeType() {
 		return mimeType;
 	}
 }

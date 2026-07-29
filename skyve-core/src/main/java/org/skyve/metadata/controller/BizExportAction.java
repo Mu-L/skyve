@@ -4,6 +4,8 @@ import org.skyve.bizport.BizPortWorkbook;
 import org.skyve.metadata.MetaData;
 import org.skyve.web.WebContext;
 
+import jakarta.annotation.Nonnull;
+
 /**
  * Produces a {@link BizPortWorkbook} for spreadsheet-based bulk data export.
  *
@@ -26,5 +28,5 @@ public abstract class BizExportAction implements MetaData {
 	 * @return the populated workbook; never {@code null}
 	 * @throws Exception if the export cannot be completed
 	 */
-	public abstract BizPortWorkbook bizExport(WebContext webContext) throws Exception;
+	public abstract @Nonnull BizPortWorkbook bizExport(@Nonnull WebContext webContext) throws Exception;
 }

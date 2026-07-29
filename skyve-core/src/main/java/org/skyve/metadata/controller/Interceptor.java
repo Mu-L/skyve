@@ -12,6 +12,9 @@ import org.skyve.metadata.model.document.Bizlet.DomainValue;
 import org.skyve.metadata.model.document.Document;
 import org.skyve.web.WebContext;
 
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
 /**
  * Provides before/after interception hooks for every Skyve lifecycle event.
  *
@@ -29,14 +32,15 @@ import org.skyve.web.WebContext;
  *
  * @see Observer
  */
+@SuppressWarnings("java:S112") // Hooks intentionally allow implementations to propagate application-specific failures.
 public abstract class Interceptor implements MetaData {
 	/**
 	 * Executes beforeNewInstance.
 	 * @param bean the bean
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeNewInstance(Bean bean)
+	@SuppressWarnings("static-method")
+	public boolean beforeNewInstance(@Nonnull Bean bean)
 	throws Exception {
 		return false;
 	}
@@ -45,8 +49,7 @@ public abstract class Interceptor implements MetaData {
 	 * Executes afterNewInstance.
 	 * @param bean the bean
 	 */
-	@SuppressWarnings("unused")
-	public void afterNewInstance(Bean bean)
+	public void afterNewInstance(@Nonnull Bean bean)
 	throws Exception {
 		// no-op
 	}
@@ -57,8 +60,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param e the e
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeValidate(Bean bean, ValidationException e)
+	@SuppressWarnings("static-method")
+	public boolean beforeValidate(@Nonnull Bean bean, @Nonnull ValidationException e)
 	throws Exception {
 		return false;
 	}
@@ -68,8 +71,7 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @param e the e
 	 */
-	@SuppressWarnings("unused")
-	public void afterValidate(Bean bean, ValidationException e)
+	public void afterValidate(@Nonnull Bean bean, @Nonnull ValidationException e)
 	throws Exception {
 		// no-op
 	}
@@ -79,8 +81,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param attributeName the attributeName
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeGetConstantDomainValues(String attributeName)
+	@SuppressWarnings("static-method")
+	public boolean beforeGetConstantDomainValues(@Nonnull String attributeName)
 	throws Exception {
 		return false;
 	}
@@ -90,8 +92,7 @@ public abstract class Interceptor implements MetaData {
 	 * @param attributeName the attributeName
 	 * @param result the result
 	 */
-	@SuppressWarnings("unused")
-	public void afterGetConstantDomainValues(String attributeName, List<DomainValue> result)
+	public void afterGetConstantDomainValues(@Nonnull String attributeName, @Nullable List<DomainValue> result)
 	throws Exception {
 		// no-op
 	}
@@ -101,8 +102,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param attributeName the attributeName
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeGetVariantDomainValues(String attributeName)
+	@SuppressWarnings("static-method")
+	public boolean beforeGetVariantDomainValues(@Nonnull String attributeName)
 	throws Exception {
 		return false;
 	}
@@ -112,8 +113,7 @@ public abstract class Interceptor implements MetaData {
 	 * @param attributeName the attributeName
 	 * @param result the result
 	 */
-	@SuppressWarnings("unused")
-	public void afterGetVariantDomainValues(String attributeName, List<DomainValue> result)
+	public void afterGetVariantDomainValues(@Nonnull String attributeName, @Nullable List<DomainValue> result)
 	throws Exception {
 		// no-op
 	}
@@ -124,8 +124,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeGetDynamicDomainValues(String attributeName, Bean bean)
+	@SuppressWarnings("static-method")
+	public boolean beforeGetDynamicDomainValues(@Nonnull String attributeName, @Nonnull Bean bean)
 	throws Exception {
 		return false;
 	}
@@ -136,8 +136,9 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @param result the result
 	 */
-	@SuppressWarnings("unused")
-	public void afterGetDynamicDomainValues(String attributeName, Bean bean, List<DomainValue> result)
+	public void afterGetDynamicDomainValues(@Nonnull String attributeName,
+												@Nonnull Bean bean,
+												@Nullable List<DomainValue> result)
 	throws Exception {
 		// no-op
 	}
@@ -149,8 +150,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeComplete(String attributeName, String value, Bean bean)
+	@SuppressWarnings("static-method")
+	public boolean beforeComplete(@Nonnull String attributeName, @Nonnull String value, @Nullable Bean bean)
 	throws Exception {
 		return false;
 	}
@@ -162,8 +163,10 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @param result the result
 	 */
-	@SuppressWarnings("unused")
-	public void afterComplete(String attributeName, String value, Bean bean, List<String> result)
+	public void afterComplete(@Nonnull String attributeName,
+								@Nonnull String value,
+								@Nullable Bean bean,
+								@Nullable List<String> result)
 	throws Exception {
 		// no-op
 	}
@@ -174,8 +177,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeSave(Document document, PersistentBean bean)
+	@SuppressWarnings("static-method")
+	public boolean beforeSave(@Nonnull Document document, @Nonnull PersistentBean bean)
 	throws Exception {
 		return false;
 	}
@@ -185,8 +188,7 @@ public abstract class Interceptor implements MetaData {
 	 * @param document the document
 	 * @param result the result
 	 */
-	@SuppressWarnings("unused")
-	public void afterSave(Document document, PersistentBean result)
+	public void afterSave(@Nonnull Document document, @Nonnull PersistentBean result)
 	throws Exception {
 		// no-op
 	}
@@ -196,8 +198,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforePreSave(Bean bean)
+	@SuppressWarnings("static-method")
+	public boolean beforePreSave(@Nonnull Bean bean)
 	throws Exception {
 		return false;
 	}
@@ -206,8 +208,7 @@ public abstract class Interceptor implements MetaData {
 	 * Executes afterPreSave.
 	 * @param bean the bean
 	 */
-	@SuppressWarnings("unused")
-	public void afterPreSave(Bean bean)
+	public void afterPreSave(@Nonnull Bean bean)
 	throws Exception {
 		// no-op
 	}
@@ -217,8 +218,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforePostSave(Bean bean)
+	@SuppressWarnings("static-method")
+	public boolean beforePostSave(@Nonnull Bean bean)
 	throws Exception {
 		return false;
 	}
@@ -227,8 +228,7 @@ public abstract class Interceptor implements MetaData {
 	 * Executes afterPostSave.
 	 * @param bean the bean
 	 */
-	@SuppressWarnings("unused")
-	public void afterPostSave(Bean bean)
+	public void afterPostSave(@Nonnull Bean bean)
 	throws Exception {
 		// no-op
 	}
@@ -239,8 +239,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeDelete(Document document, PersistentBean bean)
+	@SuppressWarnings("static-method")
+	public boolean beforeDelete(@Nonnull Document document, @Nonnull PersistentBean bean)
 	throws Exception {
 		return false;
 	}
@@ -250,8 +250,7 @@ public abstract class Interceptor implements MetaData {
 	 * @param document the document
 	 * @param bean the bean
 	 */
-	@SuppressWarnings("unused")
-	public void afterDelete(Document document, PersistentBean bean)
+	public void afterDelete(@Nonnull Document document, @Nonnull PersistentBean bean)
 	throws Exception {
 		// no-op
 	}
@@ -261,8 +260,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforePreDelete(PersistentBean bean)
+	@SuppressWarnings("static-method")
+	public boolean beforePreDelete(@Nonnull PersistentBean bean)
 	throws Exception {
 		return false;
 	}
@@ -271,8 +270,7 @@ public abstract class Interceptor implements MetaData {
 	 * Executes afterPreDelete.
 	 * @param bean the bean
 	 */
-	@SuppressWarnings("unused")
-	public void afterPreDelete(PersistentBean bean)
+	public void afterPreDelete(@Nonnull PersistentBean bean)
 	throws Exception {
 		// no-op
 	}
@@ -282,8 +280,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforePostDelete(PersistentBean bean)
+	@SuppressWarnings("static-method")
+	public boolean beforePostDelete(@Nonnull PersistentBean bean)
 	throws Exception {
 		return false;
 	}
@@ -292,8 +290,7 @@ public abstract class Interceptor implements MetaData {
 	 * Executes afterPostDelete.
 	 * @param bean the bean
 	 */
-	@SuppressWarnings("unused")
-	public void afterPostDelete(PersistentBean bean)
+	public void afterPostDelete(@Nonnull PersistentBean bean)
 	throws Exception {
 		// no-op
 	}
@@ -303,8 +300,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param bean the bean
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforePostLoad(PersistentBean bean)
+	@SuppressWarnings("static-method")
+	public boolean beforePostLoad(@Nonnull PersistentBean bean)
 	throws Exception {
 		return false;
 	}
@@ -313,8 +310,7 @@ public abstract class Interceptor implements MetaData {
 	 * Executes afterPostLoad.
 	 * @param bean the bean
 	 */
-	@SuppressWarnings("unused")
-	public void afterPostLoad(PersistentBean bean)
+	public void afterPostLoad(@Nonnull PersistentBean bean)
 	throws Exception {
 		// no-op
 	}
@@ -327,8 +323,11 @@ public abstract class Interceptor implements MetaData {
 	 * @param webContext the webContext
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforePreExecute(ImplicitActionName actionName, Bean bean, Bean parentBean, WebContext webContext) 
+	@SuppressWarnings("static-method")
+	public boolean beforePreExecute(@Nonnull ImplicitActionName actionName,
+										@Nonnull Bean bean,
+										@Nullable Bean parentBean,
+										@Nonnull WebContext webContext)
 	throws Exception {
 		return false;
 	}
@@ -340,8 +339,10 @@ public abstract class Interceptor implements MetaData {
 	 * @param parentBean the parentBean
 	 * @param webContext the webContext
 	 */
-	@SuppressWarnings("unused")
-	public void afterPreExecute(ImplicitActionName actionName, Bean result, Bean parentBean, WebContext webContext)
+	public void afterPreExecute(@Nonnull ImplicitActionName actionName,
+									@Nonnull Bean result,
+									@Nullable Bean parentBean,
+									@Nonnull WebContext webContext)
 	throws Exception {
 		// no-op
 	}
@@ -353,8 +354,8 @@ public abstract class Interceptor implements MetaData {
 	 * @param webContext the webContext
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforePreRerender(String source, Bean bean, WebContext webContext) 
+	@SuppressWarnings("static-method")
+	public boolean beforePreRerender(@Nonnull String source, @Nonnull Bean bean, @Nonnull WebContext webContext)
 	throws Exception {
 		return false;
 	}
@@ -365,8 +366,7 @@ public abstract class Interceptor implements MetaData {
 	 * @param result the result
 	 * @param webContext the webContext
 	 */
-	@SuppressWarnings("unused")
-	public void afterPreRerender(String source, Bean result, WebContext webContext)
+	public void afterPreRerender(@Nonnull String source, @Nonnull Bean result, @Nonnull WebContext webContext)
 	throws Exception {
 		// no-op
 	}
@@ -379,11 +379,11 @@ public abstract class Interceptor implements MetaData {
 	 * @param webContext the webContext
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeServerSideAction(Document document, 
-											String actionName, 
-											Bean bean, 
-											WebContext webContext)
+	@SuppressWarnings("static-method")
+	public boolean beforeServerSideAction(@Nonnull Document document,
+											@Nonnull String actionName,
+											@Nonnull Bean bean,
+											@Nullable WebContext webContext)
 	throws Exception {
 		return false;
 	}
@@ -395,11 +395,10 @@ public abstract class Interceptor implements MetaData {
 	 * @param result the result
 	 * @param webContext the webContext
 	 */
-	@SuppressWarnings("unused")
-	public void afterServerSideAction(Document document, 
-										String actionName, 
-										ServerSideActionResult<Bean> result, 
-										WebContext webContext)
+	public void afterServerSideAction(@Nonnull Document document,
+										@Nonnull String actionName,
+										@Nonnull ServerSideActionResult<Bean> result,
+										@Nullable WebContext webContext)
 	throws Exception {
 		// no-op
 	}
@@ -412,11 +411,11 @@ public abstract class Interceptor implements MetaData {
 	 * @param webContext the webContext
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeDownloadAction(Document document, 
-											String actionName,
-											Bean bean, 
-											WebContext webContext)
+	@SuppressWarnings("static-method")
+	public boolean beforeDownloadAction(@Nonnull Document document,
+											@Nonnull String actionName,
+											@Nonnull Bean bean,
+											@Nonnull WebContext webContext)
 	throws Exception {
 		return false;
 	}
@@ -429,12 +428,11 @@ public abstract class Interceptor implements MetaData {
 	 * @param download the download
 	 * @param webContext the webContext
 	 */
-	@SuppressWarnings("unused")
-	public void afterDownloadAction(Document document,
-										String actionName,
-										Bean bean, 
-										Download download, 
-										WebContext webContext)
+	public void afterDownloadAction(@Nonnull Document document,
+										@Nonnull String actionName,
+										@Nonnull Bean bean,
+										@Nonnull Download download,
+										@Nonnull WebContext webContext)
 	throws Exception {
 		// no-op
 	}
@@ -448,12 +446,12 @@ public abstract class Interceptor implements MetaData {
 	 * @param webContext the webContext
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeUploadAction(Document document, 
-										String actionName,
-										Bean bean, 
-										Upload upload, 
-										WebContext webContext)
+	@SuppressWarnings("static-method")
+	public boolean beforeUploadAction(@Nonnull Document document,
+										@Nonnull String actionName,
+										@Nonnull Bean bean,
+										@Nonnull Upload upload,
+										@Nonnull WebContext webContext)
 	throws Exception {
 		return false;
 	}
@@ -466,12 +464,11 @@ public abstract class Interceptor implements MetaData {
 	 * @param upload the upload
 	 * @param webContext the webContext
 	 */
-	@SuppressWarnings("unused")
-	public void afterUploadAction(Document document,
-									String actionName,
-									Bean bean, 
-									Upload upload, 
-									WebContext webContext)
+	public void afterUploadAction(@Nonnull Document document,
+									@Nonnull String actionName,
+									@Nonnull Bean bean,
+									@Nonnull Upload upload,
+									@Nonnull WebContext webContext)
 	throws Exception {
 		// no-op
 	}
@@ -484,11 +481,11 @@ public abstract class Interceptor implements MetaData {
 	 * @param problems the problems
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeBizImportAction(Document document, 
-											String actionName,
-											BizPortWorkbook bizPortable, 
-											UploadException problems)
+	@SuppressWarnings("static-method")
+	public boolean beforeBizImportAction(@Nonnull Document document,
+											@Nonnull String actionName,
+											@Nonnull BizPortWorkbook bizPortable,
+											@Nonnull UploadException problems)
 	throws Exception {
 		return false;
 	}
@@ -500,11 +497,10 @@ public abstract class Interceptor implements MetaData {
 	 * @param bizPortable the bizPortable
 	 * @param problems the problems
 	 */
-	@SuppressWarnings("unused")
-	public void afterBizImportAction(Document document,
-										String actionName,
-										BizPortWorkbook bizPortable,
-										UploadException problems)
+	public void afterBizImportAction(@Nonnull Document document,
+										@Nonnull String actionName,
+										@Nonnull BizPortWorkbook bizPortable,
+										@Nonnull UploadException problems)
 	throws Exception {
 		// no-op
 	}
@@ -516,10 +512,10 @@ public abstract class Interceptor implements MetaData {
 	 * @param webContext the webContext
 	 * @return the result
 	 */
-	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforeBizExportAction(Document document,
-											String actionName,
-											WebContext webContext)
+	@SuppressWarnings("static-method")
+	public boolean beforeBizExportAction(@Nonnull Document document,
+											@Nonnull String actionName,
+											@Nonnull WebContext webContext)
 	throws Exception {
 		return false;
 	}
@@ -531,11 +527,10 @@ public abstract class Interceptor implements MetaData {
 	 * @param result the result
 	 * @param webContext the webContext
 	 */
-	@SuppressWarnings("unused")
-	public void afterBizExportAction(Document document,
-										String actionName,
-										BizPortWorkbook result,
-										WebContext webContext)
+	public void afterBizExportAction(@Nonnull Document document,
+										@Nonnull String actionName,
+										@Nonnull BizPortWorkbook result,
+										@Nonnull WebContext webContext)
 	throws Exception {
 		// no-op
 	}
@@ -544,7 +539,7 @@ public abstract class Interceptor implements MetaData {
 	 * Note that this method should not throw any exceptions and should always succeed to enable correct state management after the render response.
 	 */
 	@SuppressWarnings({"unused", "static-method"})
-	public boolean beforePostRender(Bean bean, WebContext webContext) {
+	public boolean beforePostRender(@Nonnull Bean bean, @Nonnull WebContext webContext) {
 		return false;
 	}
 	
@@ -552,7 +547,7 @@ public abstract class Interceptor implements MetaData {
 	 * Note that this method should not throw any exceptions and should always succeed to enable correct state management after the render response.
 	 */
 	@SuppressWarnings("unused")
-	public void afterPostRender(Bean result, WebContext webContext) {
+	public void afterPostRender(@Nonnull Bean result, @Nonnull WebContext webContext) {
 		// no-op
 	}
 }

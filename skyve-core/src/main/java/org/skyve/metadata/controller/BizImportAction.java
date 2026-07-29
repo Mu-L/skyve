@@ -4,6 +4,8 @@ import org.skyve.bizport.BizPortWorkbook;
 import org.skyve.domain.messages.UploadException;
 import org.skyve.metadata.MetaData;
 
+import jakarta.annotation.Nonnull;
+
 /**
  * Consumes a {@link BizPortWorkbook} and imports rows into the domain model.
  *
@@ -29,5 +31,5 @@ public abstract class BizImportAction implements MetaData {
 	 * @throws Exception if the import cannot proceed at all (fatal errors may be thrown;
 	 *                   non-fatal row errors should be added to {@code problems} instead)
 	 */
-	public abstract void bizImport(BizPortWorkbook bizPortable, UploadException problems) throws Exception;
+	public abstract void bizImport(@Nonnull BizPortWorkbook bizPortable, @Nonnull UploadException problems) throws Exception;
 }

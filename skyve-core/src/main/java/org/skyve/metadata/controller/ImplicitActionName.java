@@ -3,6 +3,7 @@ package org.skyve.metadata.controller;
 import org.skyve.impl.util.XMLMetaData;
 import org.skyve.util.Util;
 
+import jakarta.annotation.Nonnull;
 import jakarta.xml.bind.annotation.XmlType;
 
 /**
@@ -96,7 +97,7 @@ public enum ImplicitActionName {
 	 */
 	Print("resources.implicitActionName.print", true);
 	
-	private String displayName;
+	private @Nonnull String displayName;
 	private boolean validatable;
 
 	/**
@@ -105,7 +106,7 @@ public enum ImplicitActionName {
 	 * @param displayName   the i18n resource key for the human-readable action name
 	 * @param validatable   {@code true} if the action supports a {@code clientValidation} attribute in view XML
 	 */
-	private ImplicitActionName(String displayName, boolean validatable) {
+	private ImplicitActionName(@Nonnull String displayName, boolean validatable) {
 		this.displayName = displayName;
 		this.validatable = validatable;
 	}
@@ -116,7 +117,7 @@ public enum ImplicitActionName {
 	 * @return the i18n key; never {@code null}
 	 * @see #getLocalisedDisplayName()
 	 */
-	public String getDisplayName() {
+	public @Nonnull String getDisplayName() {
 		return displayName;
 	}
 	
@@ -124,8 +125,8 @@ public enum ImplicitActionName {
 	 * Returns the localisedDisplayName.
 	 * @return the result
 	 */
-	public String getLocalisedDisplayName() {
-		return Util.i18n(displayName);
+	public @Nonnull String getLocalisedDisplayName() {
+		return Util.nullSafeI18n(displayName);
 	}
 	
 	/**

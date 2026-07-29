@@ -5,6 +5,8 @@ import org.skyve.domain.messages.UploadException;
 import org.skyve.metadata.MetaData;
 import org.skyve.web.WebContext;
 
+import jakarta.annotation.Nonnull;
+
 /**
  * Processes a file uploaded by the user.
  *
@@ -32,5 +34,9 @@ public abstract class UploadAction<T extends Bean> implements MetaData {
 	 * @return the (potentially updated) bean to use for the next render cycle
 	 * @throws Exception if the upload cannot proceed at all
 	 */
-	public abstract T upload(T bean, Upload upload, UploadException exception, WebContext webContext) throws Exception;
+	public abstract @Nonnull T upload(@Nonnull T bean,
+										@Nonnull Upload upload,
+										@Nonnull UploadException exception,
+										@Nonnull WebContext webContext)
+	throws Exception;
 }
