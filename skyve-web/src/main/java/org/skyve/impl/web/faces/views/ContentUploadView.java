@@ -524,11 +524,22 @@ public class ContentUploadView extends AbstractUploadView {
 
 			// Add to content
 			// NB This handles compound bindings and checks for content access on the content owning bean
-			AttachmentContent content = FacesContentUtil.handleFileUpload(Objects.requireNonNull(fileName, "Uploaded file name"),
-																			Objects.requireNonNull(fileContents, "Uploaded file content"),
-																			contentType,
-																			bean,
-																			unsanitisedContentBinding);
+			String uploadedFileName = Objects.requireNonNull(fileName, "Uploaded file name");
+			byte[] uploadedFileContents = Objects.requireNonNull(fileContents, "Uploaded file content");
+			AttachmentContent content;
+			if (contentType == null) {
+				content = FacesContentUtil.handleFileUpload(uploadedFileName,
+																uploadedFileContents,
+																bean,
+																unsanitisedContentBinding);
+			}
+			else {
+				content = FacesContentUtil.handleFileUpload(uploadedFileName,
+																uploadedFileContents,
+																contentType,
+																bean,
+																unsanitisedContentBinding);
+			}
 			String contentId = Objects.requireNonNull(content.getContentId(), "Uploaded content id");
 
 			// only put conversation in cache if we have been successful in executing

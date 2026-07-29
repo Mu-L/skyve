@@ -20,60 +20,143 @@ import org.skyve.metadata.user.User;
 import org.skyve.util.Binder;
 import org.skyve.util.Binder.TargetMetaData;
 
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+/**
+ * Provides utility methods for storing JSF file uploads in the content repository.
+ *
+ * <p>The upload methods resolve the content-owning bean from the supplied binding,
+ * enforce access for the current user, and create a new attachment for every upload.
+ */
 public class FacesContentUtil {
 	/**
-	 * Disallow instantiation.
+	 * Prevents utility-class instantiation.
 	 */
 	private FacesContentUtil() {
-		// nothing to see her
+		// nothing to see here
 	}
 	
 	/**
-	 * Handle a file upload event and return the content once uploaded.
-	 * @param event the event to handle
-	 * @param bean the driving bean
-	 * @param binding the binding to upload
-	 * @return the uploaded content
-	 * @throws Exception
+	 * Stores the file represented by an upload event against a bean content binding.
+	 *
+	 * <p>Side effects: creates a new attachment in the content repository and may
+	 * instantiate intermediate beans when {@code binding} is compound.
+	 *
+	 * @param event the upload event containing the file name, bytes, and content type
+	 * @param bean the bean relative to which the content binding is resolved
+	 * @param binding the simple or compound binding of the target content attribute
+	 * @return the stored attachment, including its newly assigned content identifier
+	 * @throws SecurityException if the current user cannot upload content to the resolved attribute
+	 * @throws Exception if the upload cannot be resolved or stored
 	 */
-	public static AttachmentContent handleFileUpload(FileUploadEvent event,
-														Bean bean,
-														String binding)
+	public static @Nonnull AttachmentContent handleFileUpload(@Nonnull FileUploadEvent event,
+																@Nonnull Bean bean,
+																@Nonnull String binding)
 	throws Exception {
 		UploadedFile file = event.getFile();
-		return handleFileUpload(file.getFileName(), file.getContent(), file.getContentType(), bean, binding);
+		return storeFileUpload(file.getFileName(), file.getContent(), file.getContentType(), bean, binding);
 	}
 	
 	/**
-	 * Handle a file upload event and return the content once uploaded.
-	 * @param fileContents	the contents of the uploaded file
-	 * @param bean the driving bean
-	 * @param binding the binding to upload
-	 * @return the uploaded content
-	 * @throws Exception
+	 * Stores unnamed uploaded bytes against a bean content binding.
+	 *
+	 * <p>Side effects: creates a new attachment in the content repository and may
+	 * instantiate intermediate beans when {@code binding} is compound. The
+	 * attachment derives a file name from {@code contentType} when possible and
+	 * otherwise uses {@code content}.
+	 *
+	 * @param fileContents the uploaded file bytes
+	 * @param contentType the uploaded content type
+	 * @param bean the bean relative to which the content binding is resolved
+	 * @param binding the simple or compound binding of the target content attribute
+	 * @return the stored attachment, including its newly assigned content identifier
+	 * @throws SecurityException if the current user cannot upload content to the resolved attribute
+	 * @throws Exception if the upload cannot be resolved or stored
 	 */
-	public static AttachmentContent handleFileUpload(byte[] fileContents,
-														String contentType,
-														Bean bean,
-														String binding)
+	public static @Nonnull AttachmentContent handleFileUpload(@Nonnull byte[] fileContents,
+																@Nonnull String contentType,
+																@Nonnull Bean bean,
+																@Nonnull String binding)
 	throws Exception {
-		return handleFileUpload(null, fileContents, contentType, bean, binding);
+		return storeFileUpload(null, fileContents, contentType, bean, binding);
+	}
+
+	/**
+	 * Stores named uploaded bytes against a bean content binding, deriving the
+	 * content type from the file name when possible.
+	 *
+	 * <p>Side effects: creates a new attachment in the content repository and may
+	 * instantiate intermediate beans when {@code binding} is compound.
+	 *
+	 * @param filePathOrName the uploaded file name or path
+	 * @param fileContents the uploaded file bytes
+	 * @param bean the bean relative to which the content binding is resolved
+	 * @param binding the simple or compound binding of the target content attribute
+	 * @return the stored attachment, including its newly assigned content identifier
+	 * @throws SecurityException if the current user cannot upload content to the resolved attribute
+	 * @throws Exception if the upload cannot be resolved or stored
+	 */
+	public static @Nonnull AttachmentContent handleFileUpload(@Nonnull String filePathOrName,
+																@Nonnull byte[] fileContents,
+																@Nonnull Bean bean,
+																@Nonnull String binding)
+	throws Exception {
+		return storeFileUpload(filePathOrName, fileContents, null, bean, binding);
 	}
 	
 	/**
-	 * Handle a file upload event and return the content once uploaded.
-	 * @param filePathOrName the name or full path of the uploaded file
-	 * @param fileContents	the contents of the uploaded file
-	 * @param bean the driving bean
-	 * @param binding the binding to upload
-	 * @return the uploaded content
-	 * @throws Exception
+	 * Stores uploaded bytes against a bean content binding.
+	 *
+	 * <p>Only the final file-name component of {@code filePathOrName} is retained.
+	 *
+	 * <p>Side effects: resolves and checks content access for the current user,
+	 * may instantiate intermediate beans for a compound binding, and inserts a new
+	 * attachment into the content repository using the attribute's indexing policy.
+	 * The method always creates a new content node rather than replacing an existing
+	 * node, so the returned attachment receives a new content identifier.
+	 *
+	 * @param filePathOrName the uploaded file name or path
+	 * @param fileContents the uploaded file bytes
+	 * @param contentType the uploaded content type
+	 * @param bean the bean relative to which the content binding is resolved
+	 * @param binding the simple or compound binding of the target content attribute
+	 * @return the stored attachment, including its newly assigned content identifier
+	 * @throws SecurityException if the current user cannot upload content to the resolved attribute
+	 * @throws IllegalStateException if the owner of a compound content binding cannot be resolved
+	 * @throws Exception if metadata resolution or content-repository storage fails
 	 */
-	public static AttachmentContent handleFileUpload(String filePathOrName,
-														byte[] fileContents,
-														String contentType,
-														Bean bean,
-														String binding)
+	public static @Nonnull AttachmentContent handleFileUpload(@Nonnull String filePathOrName,
+																@Nonnull byte[] fileContents,
+																@Nonnull String contentType,
+																@Nonnull Bean bean,
+																@Nonnull String binding)
+	throws Exception {
+		return storeFileUpload(filePathOrName, fileContents, contentType, bean, binding);
+	}
+
+	/**
+	 * Stores uploaded bytes while accommodating metadata omitted by an upload event.
+	 *
+	 * <p>If the content type is unavailable, it is derived from the file name when
+	 * possible. If both values are unavailable, the attachment is named
+	 * {@code content}. Only the final component of a supplied file path is retained.
+	 *
+	 * @param filePathOrName the uploaded file name or path, or {@code null} when unavailable
+	 * @param fileContents the uploaded file bytes
+	 * @param contentType the uploaded content type, or {@code null} when unavailable
+	 * @param bean the bean relative to which the content binding is resolved
+	 * @param binding the simple or compound binding of the target content attribute
+	 * @return the stored attachment, including its newly assigned content identifier
+	 * @throws SecurityException if the current user cannot upload content to the resolved attribute
+	 * @throws IllegalStateException if the owner of a compound content binding cannot be resolved
+	 * @throws Exception if metadata resolution or content-repository storage fails
+	 */
+	private static @Nonnull AttachmentContent storeFileUpload(@Nullable String filePathOrName,
+																@Nonnull byte[] fileContents,
+																@Nullable String contentType,
+																@Nonnull Bean bean,
+																@Nonnull String binding)
 	throws Exception {
 		User user = CORE.getUser();
 		Customer customer = user.getCustomer();
@@ -121,13 +204,18 @@ public class FacesContentUtil {
 		// That way, if the change is discarded (not committed), it'll still point to the original attachment.
 		// Also, browser caching is simple as the URL is changed (as a consequence of the content id change)
 		AttachmentContent content = new AttachmentContent(contentOwnerBizCustomer,
-															contentOwnerBizModule,
-															contentOwnerBizDocument,
-															contentOwnerBizDataGroupId,
-															contentOwnerBizUserId,
-															contentOwnerBizId,
-															contentAttributeName)
-											.attachment(fileName, contentType, fileContents);
+																	contentOwnerBizModule,
+																	contentOwnerBizDocument,
+																	contentOwnerBizDataGroupId,
+																	contentOwnerBizUserId,
+																	contentOwnerBizId,
+																	contentAttributeName);
+		if (contentType == null) {
+			content.attachment((fileName == null) ? "content" : fileName, fileContents);
+		}
+		else {
+			content.attachment(fileName, contentType, fileContents);
+		}
 		try (ContentManager cm = EXT.newContentManager()) {
 			// Determine if we should index the content or not
 			boolean index = true; // default
