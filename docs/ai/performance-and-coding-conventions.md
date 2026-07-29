@@ -45,7 +45,8 @@ Skyve must be performant. Apply these rules to all production Java code; they ar
 
 ## String Input Normalisation
 
-- At input boundaries, pass strings through `Util.processStringValue()` before using or storing them. This includes request parameters, metadata and configuration values, imported data, external-service responses, and other text entering the application or framework.
+- At UI/request input boundaries, pass strings through `Util.processStringValue()` before using or storing them.
+- Treat persisted database values as trusted, already-normalised domain values by default. Do not call `Util.processStringValue()` on values read from the database. String normalisation belongs at the UI/request boundary before values enter business logic or persistence, except where a specific integration contract requires otherwise.
 - Use the processed value throughout downstream logic so `null` is the single representation of absent text. Do not repeat separate checks for `null`, empty strings, and whitespace-only strings in business logic or tests.
 - `Util.processStringValue()` trims leading and trailing whitespace and returns `null` when the trimmed result is empty. Within Skyve implementation code that cannot depend on the public `Util` facade, use `UtilImpl.processStringValue()` with the same semantics.
 - Do not normalise opaque or fixed-format values when whitespace is meaningful, such as passwords, signed values, raw payloads, or fixed-width records.
