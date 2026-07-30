@@ -138,10 +138,12 @@ public class JSON {
 	/**
 	 * Consumes JSON as an explicitly supplied Java type without a Skyve user context.
 	 *
-	 * <p>The supplied {@code type}, rather than a payload {@code "class"} property,
-	 * controls conversion. Record JSON may therefore contain {@code "class"}, in any
-	 * position, or omit it entirely. It is ignored as an unknown record property. Skyve
-	 * document metadata remains a dynamic map because no user context is available.
+	 * <p>This overload is intended for JSON that need not contain Skyve's
+	 * {@code "class"} type discriminator. The supplied {@code type} is authoritative and
+	 * controls conversion. If the JSON does contain a {@code "class"} property, its value
+	 * is ignored rather than used to select or load a class. Record JSON may therefore
+	 * include or omit {@code "class"}. Skyve document metadata remains a dynamic map
+	 * because no user context is available.
 	 *
 	 * @param <T> target type
 	 * @param json JSON text
@@ -161,10 +163,12 @@ public class JSON {
 	 * The context allows document instances nested anywhere in the value graph to be
 	 * reconstructed from their {@code bizModule} and {@code bizDocument} metadata.
 	 *
-	 * <p>The supplied {@code type} is authoritative. A payload {@code "class"} property
-	 * is not consumed as a type discriminator and may be present or absent from record
-	 * JSON. Nested Skyve documents are still recognised from their leading document
-	 * metadata.
+	 * <p>This overload is intended for JSON that need not contain Skyve's
+	 * {@code "class"} type discriminator. The supplied {@code type} is authoritative and
+	 * controls conversion. If the JSON does contain a {@code "class"} property, its value
+	 * is ignored rather than used to select or load a class. Record JSON may therefore
+	 * include or omit {@code "class"}. Nested Skyve documents are still recognised from
+	 * their leading document metadata.
 	 *
 	 * @param <T> target type
 	 * @param user current Skyve user

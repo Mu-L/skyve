@@ -683,6 +683,7 @@ public class JSONReader {
 	 * <p>Side effects: advances the source iterator through all four digits.
 	 *
 	 * @return the decoded UTF-16 code unit
+	 * @throws IllegalStateException if any of the four characters is not hexadecimal
 	 */
 	private char unicode() {
 		int value = 0;
@@ -692,12 +693,13 @@ public class JSONReader {
 				value = (value << 4) + c - '0';
 				break;
 			case 'a','b', 'c', 'd', 'e', 'f':
-				value = (value << 4) + c - 'k';
+				value = (value << 4) + c - 'a' + 10;
 				break;
 			case 'A','B', 'C', 'D', 'E', 'F':
-				value = (value << 4) + c - 'K';
+				value = (value << 4) + c - 'A' + 10;
 				break;
 			default:
+				throw new IllegalStateException("Malformed JSON - invalid Unicode escape");
 			}
 		}
 
