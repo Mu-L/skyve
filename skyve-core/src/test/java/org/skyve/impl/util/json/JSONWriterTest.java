@@ -2,28 +2,116 @@ package org.skyve.impl.util.json;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
 
+import java.io.Serial;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import java.util.Date;
-
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
+import org.skyve.domain.ChildBean;
+import org.skyve.domain.HierarchicalBean;
 import org.skyve.domain.types.OptimisticLock;
+import org.skyve.impl.domain.AbstractPersistentBean;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.mockito.Mockito;
 import org.skyve.domain.Bean;
+import org.skyve.metadata.customer.Customer;
+import org.skyve.metadata.model.Attribute;
+import org.skyve.metadata.model.Attribute.AttributeType;
+import org.skyve.metadata.model.document.Document;
+import org.skyve.metadata.model.document.DomainType;
+import org.skyve.metadata.model.document.Reference;
+import org.skyve.metadata.module.Module;
 
 @SuppressWarnings("static-method")
 class JSONWriterTest {
+	private static final String ADMIN_USERNAME = "admin";
+	private static final String HELLO = "hello";
+	private static final String JSON_HELLO = "\"hello\"";
+	private static final String VALUE = "value";
+
+	/** Adds ordinary getters to a mocked Skyve document for attribute serialisation. */
+	public abstract static class WriterDocument extends AbstractPersistentBean
+	implements ChildBean<Bean>, HierarchicalBean<Bean> {
+		@Serial
+		private static final long serialVersionUID = 1L;
+
+		/** Returns a reference attribute value. */
+		public abstract Bean getReference();
+
+		/** Returns a domain-backed attribute value. */
+		public abstract String getChoice();
+
+		/** Returns a Boolean attribute value. */
+		public abstract Boolean getFlag();
+
+		/** Returns a display-formatted attribute value. */
+		public abstract String getText();
+	}
+
+	/** Groups metadata and the multiply-typed document used by writer tests. */
+	private record WriterDocumentContext(Customer customer, WriterDocument document) {
+		// Test fixture.
+	}
+
+	/** Creates document metadata covering every attribute-writing branch. */
+	private static WriterDocumentContext writerDocumentContext() {
+		Customer customer = Mockito.mock(Customer.class);
+		Module module = Mockito.mock(Module.class);
+		Document metadata = Mockito.mock(Document.class);
+		Reference reference = Mockito.mock(Reference.class);
+		Attribute domain = Mockito.mock(Attribute.class);
+		Attribute bool = Mockito.mock(Attribute.class);
+		Attribute text = Mockito.mock(Attribute.class);
+		WriterDocument document = Mockito.mock(WriterDocument.class);
+
+		Mockito.when(document.getBizModule()).thenReturn("test");
+		Mockito.when(document.getBizDocument()).thenReturn("Document");
+		Mockito.when(document.getBizId()).thenReturn("id");
+		Mockito.when(document.getBizCustomer()).thenReturn("customer");
+		Mockito.when(document.getBizDataGroupId()).thenReturn("group");
+		Mockito.when(document.getBizUserId()).thenReturn("user");
+		Mockito.when(document.getBizVersion()).thenReturn(Integer.valueOf(2));
+		Mockito.when(document.getBizLock()).thenReturn(new OptimisticLock(ADMIN_USERNAME, Date.from(Instant.EPOCH)));
+		Mockito.doReturn(Boolean.FALSE).when(document).isDynamic(anyString());
+		Mockito.doReturn(Mockito.mock(Bean.class)).when((ChildBean<?>) document).getParent();
+		Mockito.when(((ChildBean<?>) document).getBizOrdinal()).thenReturn(Integer.valueOf(3));
+		Mockito.when(((HierarchicalBean<?>) document).getBizParentId()).thenReturn("parent-id");
+		Mockito.when(document.getReference()).thenReturn(Mockito.mock(Bean.class));
+		Mockito.when(document.getChoice()).thenReturn("choice");
+		Mockito.when(document.getFlag()).thenReturn(Boolean.TRUE);
+		Mockito.when(document.getText()).thenReturn("text");
+
+		Mockito.when(reference.getName()).thenReturn("reference");
+		Mockito.when(domain.getName()).thenReturn("choice");
+		Mockito.when(domain.getDomainType()).thenReturn(DomainType.constant);
+		Mockito.when(bool.getName()).thenReturn("flag");
+		Mockito.when(bool.getAttributeType()).thenReturn(AttributeType.bool);
+		Mockito.when(text.getName()).thenReturn("text");
+		Mockito.when(text.getAttributeType()).thenReturn(AttributeType.text);
+		Mockito.doReturn(String.class).when(text).getImplementingType();
+		Mockito.when(customer.getModule("test")).thenReturn(module);
+		Mockito.when(module.getDocument(customer, "Document")).thenReturn(metadata);
+		Mockito.when(metadata.getAttribute("text")).thenReturn(text);
+		Mockito.doReturn(List.of(reference, domain, bool, text)).when(metadata).getAllAttributes(customer);
+		return new WriterDocumentContext(customer, document);
+	}
 
 	@Test
 	void staticWriteSerialisesSimpleValues() {
@@ -53,7 +141,7 @@ class JSONWriterTest {
 	void writeStringEscapesSpecialCharacters() {
 		JSONWriter writer = new JSONWriter(null);
 		String[][] cases = {
-				{"hello", "\"hello\""},
+				{HELLO, JSON_HELLO},
 				{"say \"hi\"", "\"say \\\"hi\\\"\""},
 				{"a\\b", "\"a\\\\b\""},
 				{"line1\nline2", "\"line1\\nline2\""},
@@ -98,9 +186,9 @@ class JSONWriterTest {
 	void writeSingleEntryMap() {
 		JSONWriter writer = new JSONWriter(null);
 		Map<String, Object> map = new LinkedHashMap<>();
-		map.put("key", "value");
+		map.put("key", VALUE);
 		String result = writer.write(map, null);
-		assertThat(result, is("{\"key\":\"value\"}"));
+		assertThat(result, is("{\"key\":\"" + VALUE + "\"}"));
 	}
 
 	@Test
@@ -208,7 +296,7 @@ class JSONWriterTest {
 	@Test
 	void writeDateProducesQuotedString() {
 		JSONWriter writer = new JSONWriter(null);
-		java.util.Date date = new java.util.Date(0L);
+		Date date = Date.from(Instant.EPOCH);
 		String result = writer.write(date, null);
 		assertThat(result, is("\"" + date.toString() + "\""));
 	}
@@ -238,15 +326,43 @@ class JSONWriterTest {
 		}
 	}
 
+	/** Supplies an accessor that fails during ordinary Java bean serialisation. */
+	@SuppressWarnings("unused") // Accessed reflectively through JavaBeans introspection.
+	private static class FailingBean {
+		/** Always fails so the reflective exception path can be verified. */
+		public String getValue() {
+			throw new IllegalStateException("getter failed");
+		}
+
+		/** Provides a writable property for JavaBeans introspection. */
+		public void setValue(String value) {
+			// Test fixture.
+		}
+	}
+
+	/** Supplies a non-public declaring class whose accessor must be made accessible. */
+	@SuppressWarnings("unused") // Accessed reflectively through JavaBeans introspection.
+	private static class PrivateBean {
+		/** Returns the value written by the accessibility test. */
+		public String getValue() {
+			return "private";
+		}
+
+		/** Provides a writable property for JavaBeans introspection. */
+		public void setValue(String value) {
+			// Test fixture.
+		}
+	}
+
 	@Test
 	void writePOJOIncludesClassAndPropertyInJSON() {
 		JSONWriter writer = new JSONWriter(null);
 		SimpleBean bean = new SimpleBean();
-		bean.setLabel("hello");
+		bean.setLabel(HELLO);
 		String result = writer.write(bean, null);
 		assertThat(result, containsString("\"class\""));
 		assertThat(result, containsString("\"label\""));
-		assertThat(result, containsString("\"hello\""));
+		assertThat(result, containsString(JSON_HELLO));
 	}
 
 	@Test
@@ -258,15 +374,164 @@ class JSONWriterTest {
 		assertThat(result, containsString("\"label\":null"));
 	}
 
+	/** Verifies inaccessible declaring classes are opened for bean accessor invocation. */
+	@Test
+	void writePrivatePojoMakesAccessorAccessible() {
+		String result = new JSONWriter(null).write(new PrivateBean(), null);
+
+		assertThat(result, containsString("\"value\":\"private\""));
+	}
+
+	/** Verifies a failing Java bean getter is logged and produces a closed JSON object. */
+	@Test
+	void writePojoHandlesGetterFailure() {
+		String result = new JSONWriter(null).write(new FailingBean(), null);
+
+		assertThat(result, startsWith("{\"class\":"));
+		assertThat(result, org.hamcrest.CoreMatchers.endsWith("}"));
+	}
+
+	// ---- Java records -----------------------------------------------------------
+
+	/** Supplies a nested record value for writer tests. */
+	private record NestedRecord(String value) {
+		// Test value.
+	}
+
+	/** Supplies scalar, nullable, nested, and collection components for record writing. */
+	private record ExampleRecord(String name, int count, Double amount, NestedRecord nested,
+			List<NestedRecord> children) {
+		// Test value.
+	}
+
+	/** Supplies a record accessor that fails while being serialised. */
+	private record FailingRecord(String value) {
+		/**
+		 * Fails deliberately to exercise record-accessor error handling.
+		 *
+		 * @return never returns normally
+		 * @throws IllegalStateException on every invocation
+		 */
+		@Override
+		public String value() {
+			throw new IllegalStateException("accessor failed");
+		}
+	}
+
+	/** Supplies a record whose mutable component can refer back to the record. */
+	private record CyclicRecord(List<Object> values) {
+		// Test value.
+	}
+
+	/** Verifies class metadata and declaration-ordered components in record JSON. */
+	@Test
+	void writeRecordUsesComponentNamesWithClassMetadata() {
+		JSONWriter writer = new JSONWriter(null);
+		ExampleRecord value = new ExampleRecord("example", 2, null, new NestedRecord("parent"),
+				List.of(new NestedRecord("child")));
+
+		String result = writer.write(value, null);
+
+		assertThat(result, is("{\"class\":\"org.skyve.impl.util.json.JSONWriterTest$ExampleRecord\","
+				+ "\"name\":\"example\",\"count\":2,\"amount\":null,"
+				+ "\"nested\":{\"class\":\"org.skyve.impl.util.json.JSONWriterTest$NestedRecord\","
+				+ "\"value\":\"parent\"},\"children\":[{\"class\":"
+				+ "\"org.skyve.impl.util.json.JSONWriterTest$NestedRecord\",\"value\":\"child\"}]}"));
+	}
+
+	/** Verifies that records retain class metadata when a projection is supplied. */
+	@Test
+	void writeProjectedRecordRetainsClassMetadata() {
+		ExampleRecord value = new ExampleRecord("example", 2, null, null, List.of());
+
+		String result = new JSONWriter(null).write(value, java.util.Set.of("name"));
+
+		assertThat(result, startsWith("{\"class\":\"org.skyve.impl.util.json.JSONWriterTest$ExampleRecord\""));
+		assertThat(result, containsString("\"count\":2"));
+	}
+
+	/** Verifies that record component accessor failures retain their original cause. */
+	@Test
+	void writeRecordWrapsAccessorFailure() {
+		FailingRecord value = new FailingRecord("ignored");
+
+		IllegalStateException exception = assertThrows(IllegalStateException.class,
+				() -> new JSONWriter(null).write(value, null));
+
+		assertThat(exception.getMessage(), containsString(VALUE));
+		assertSame(IllegalStateException.class, exception.getCause().getClass());
+	}
+
+	/** Verifies circular references reached through record components are written as null. */
+	@Test
+	void writeRecordStopsCircularReferences() {
+		List<Object> values = new ArrayList<>();
+		CyclicRecord value = new CyclicRecord(values);
+		values.add(value);
+
+		String result = new JSONWriter(null).write(value, null);
+
+		assertThat(result, containsString("\"values\":[null]"));
+	}
+
+	// ---- Skyve documents -------------------------------------------------------
+
+	/**
+	 * Verifies complete document output across all attribute and standard-property paths,
+	 * without querying or emitting the synthetic hierarchical children property.
+	 */
+	@Test
+	void writeCompleteDocumentIncludesAttributesAndFrameworkProperties() {
+		WriterDocumentContext context = writerDocumentContext();
+
+		String result = new JSONWriter(context.customer()).write(context.document(), null);
+
+		assertThat(result, containsString("\"bizModule\":\"test\""));
+		assertThat(result, containsString("\"reference\":"));
+		assertThat(result, containsString("\"choice\":\"choice\""));
+		assertThat(result, containsString("\"flag\":true"));
+		assertThat(result, containsString("\"text\":\"text\""));
+		assertThat(result, containsString("\"bizVersion\":2"));
+		assertThat(result, containsString("\"bizParentId\":\"parent-id\""));
+		assertThat(result, not(containsString("\"children\":")));
+		Mockito.verify((HierarchicalBean<?>) context.document(), Mockito.never()).getChildren();
+	}
+
+	/** Verifies projected documents sanitise bindings and tolerate missing properties. */
+	@Test
+	void writeProjectedDocumentUsesRequestedBindings() {
+		WriterDocumentContext context = writerDocumentContext();
+		java.util.Set<String> properties = new java.util.LinkedHashSet<>();
+		properties.add("text");
+		properties.add("missing.property");
+
+		String result = new JSONWriter(context.customer()).write(context.document(), properties);
+
+		assertThat(result, containsString("\"text\":\"text\""));
+		assertThat(result, containsString("\"missing_property\":null"));
+	}
+
+	/** Verifies metadata failures are contained and still produce a closed JSON object. */
+	@Test
+	void writeDocumentHandlesMetadataFailure() {
+		WriterDocumentContext context = writerDocumentContext();
+		Mockito.when(context.customer().getModule("test")).thenThrow(new IllegalStateException("metadata failed"));
+
+		String result = new JSONWriter(context.customer()).write(context.document(), null);
+
+		assertThat(result, startsWith("{\"bizModule\":\"test\",\"bizDocument\":\"Document\""));
+		assertThat(result, org.hamcrest.CoreMatchers.endsWith("}"));
+	}
+
 	// ---- OptimisticLock -------------------------------------------------
 
 	@Test
 	void writeOptimisticLockProducesQuotedString() {
 		JSONWriter writer = new JSONWriter(null);
 		org.skyve.domain.types.OptimisticLock lock =
-				new org.skyve.domain.types.OptimisticLock("admin", new java.util.Date(0L));
+				new org.skyve.domain.types.OptimisticLock(ADMIN_USERNAME, Date.from(Instant.EPOCH));
 		String result = writer.write(lock, null);
-		assertThat(result, containsString("admin"));
+		assertThat(result, containsString(ADMIN_USERNAME));
 	}
 
 	// ---- Skyve Enumeration interface ------------------------------------
@@ -430,7 +695,7 @@ class JSONWriterTest {
         @Test
         void writeObjectArray() {
                 JSONWriter writer = new JSONWriter(null);
-                Object[] arr = {"hello", Integer.valueOf(42)};
+				Object[] arr = {HELLO, Integer.valueOf(42)};
                 String result = writer.write(arr, null);
                 assertThat(result, is("[\"hello\",42]"));
         }
@@ -453,7 +718,7 @@ class JSONWriterTest {
         void writeMapContainingNullValue() {
                 JSONWriter writer = new JSONWriter(null);
                 Map<String, Object> map = new LinkedHashMap<>();
-                map.put("present", "value");
+				map.put("present", VALUE);
                 map.put("absent", null);
                 String result = writer.write(map, null);
                 assertThat(result, containsString("\"present\""));
@@ -522,12 +787,12 @@ class JSONWriterTest {
 	void writePlainPojoWithNullPropertyNamesIncludesClassField() {
 		JSONWriter writer = new JSONWriter(null);
 		WriterTestBean bean = new WriterTestBean();
-		bean.setLabel("hello");
+		bean.setLabel(HELLO);
 		bean.setCount(7);
 		String result = writer.write(bean, null);
 		// propertyNames == null → class property is prepended
 		assertThat(result, containsString("\"class\""));
-		assertThat(result, containsString("\"hello\""));
+		assertThat(result, containsString(JSON_HELLO));
 	}
 
 	@Test
@@ -543,8 +808,9 @@ class JSONWriterTest {
 
 	@Test
 	void writeOptimisticLockOutputsString() {
-		@SuppressWarnings("deprecation")
-		OptimisticLock lock = new OptimisticLock("admin", new Date(2024 - 1900, 0, 15, 10, 30, 0));
+		Date timestamp = Date.from(LocalDateTime.of(2024, 1, 15, 10, 30)
+				.atZone(ZoneId.systemDefault()).toInstant());
+		OptimisticLock lock = new OptimisticLock(ADMIN_USERNAME, timestamp);
 		String result = new JSONWriter(null).write(lock, null);
 		assertThat(result, notNullValue());
 		assertThat(result, startsWith("\""));

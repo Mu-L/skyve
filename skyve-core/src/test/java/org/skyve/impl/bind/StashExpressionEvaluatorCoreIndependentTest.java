@@ -63,6 +63,7 @@ class StashExpressionEvaluatorCoreIndependentTest {
 	void evaluateReturnsStashedValue() throws Exception {
 		SortedMap<String, Object> stash = new TreeMap<>();
 		stash.put("a", "b");
+		stash.put("nullValue", null);
 
 		AbstractPersistence persistence = Mockito.mock(AbstractPersistence.class);
 		Mockito.when(persistence.getStash()).thenReturn(stash);
@@ -71,6 +72,7 @@ class StashExpressionEvaluatorCoreIndependentTest {
 			StashExpressionEvaluator evaluator = new StashExpressionEvaluator();
 			Object result = evaluator.evaluateWithoutPrefixOrSuffix("a", null);
 			assertEquals("b", result);
+			assertNull(evaluator.evaluateWithoutPrefixOrSuffix("nullValue", null));
 		}
 		finally {
 			ThreadLocalPersistenceTestUtil.clearThreadLocalPersistence();
@@ -81,6 +83,7 @@ class StashExpressionEvaluatorCoreIndependentTest {
 	void formatReturnsDisplayValueForStashValue() throws Exception {
 		SortedMap<String, Object> stash = new TreeMap<>();
 		stash.put("n", Integer.valueOf(5));
+		stash.put("nullValue", null);
 
 		AbstractPersistence persistence = Mockito.mock(AbstractPersistence.class);
 		Mockito.when(persistence.getStash()).thenReturn(stash);
@@ -93,6 +96,7 @@ class StashExpressionEvaluatorCoreIndependentTest {
 			StashExpressionEvaluator evaluator = new StashExpressionEvaluator();
 			String result = evaluator.formatWithoutPrefixOrSuffix("n", null);
 			assertThat(result, is("5"));
+			assertThat(evaluator.formatWithoutPrefixOrSuffix("nullValue", null), is(""));
 		}
 		finally {
 			ThreadLocalPersistenceTestUtil.clearThreadLocalPersistence();

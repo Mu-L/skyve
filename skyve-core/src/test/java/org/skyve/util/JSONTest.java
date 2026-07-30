@@ -15,6 +15,10 @@ import org.skyve.metadata.customer.Customer;
  */
 @SuppressWarnings("static-method")
 class JSONTest {
+	/** Supplies a minimal record for public API round-trip verification. */
+	private record ExampleRecord(String name, int count) {
+		// Test value.
+	}
 
 	@Test
 	void marshallNullReturnsNullJson() {
@@ -44,6 +48,20 @@ class JSONTest {
 	void unmarshallJsonNumberReturnsNumber() throws Exception {
 		Object result = JSON.unmarshall("42");
 		assertNotNull(result);
+	}
+
+	/** Verifies typed and self-describing record round trips through the public utility. */
+	@Test
+	void recordRoundTripSupportsTypedAndUntypedUnmarshalling() throws Exception {
+		ExampleRecord expected = new ExampleRecord("example", 3);
+
+		String json = JSON.marshall(expected);
+		ExampleRecord typedResult = JSON.unmarshall(json, ExampleRecord.class);
+		Object untypedResult = JSON.unmarshall(json);
+
+		assertEquals("{\"class\":\"org.skyve.util.JSONTest$ExampleRecord\",\"name\":\"example\",\"count\":3}", json);
+		assertEquals(expected, typedResult);
+		assertEquals(expected, untypedResult);
 	}
 
 	// ---- marshall(Customer, Object) -- exercises the 2-arg Customer overload ----

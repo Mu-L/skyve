@@ -7,6 +7,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayDeque;
@@ -15,6 +16,7 @@ import java.util.Date;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.locationtech.jts.geom.Geometry;
@@ -40,14 +42,15 @@ import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.skyve.util.logging.SkyveLoggerFactory;
 
-// TODO Clean up exception handling in JSON stuff
 /**
  * Serialises Java objects — domain beans, maps, collections, and primitives — to
  * a JSON string, respecting Skyve attribute converters and bean reference semantics.
  *
- * <p>Supports circular-reference detection via a visited-bean set. Geometry values
- * are written as Well-Known Text (WKT). Dates and Skyve temporal types are written
- * as ISO-8601 strings.
+ * <p>Java records are written as self-describing JSON objects in component declaration
+ * order, using the same {@code class} attribute as ordinary Java beans. The writer
+ * also supports circular-reference detection via a visited-object stack. Geometry
+ * values are written as Well-Known Text (WKT). Dates and Skyve temporal types are
+ * written as ISO-8601 strings.
  *
  * <p>Threading: not thread-safe. Create a new instance per serialisation.
  */
@@ -57,102 +60,213 @@ public class JSONWriter {
 	private Deque<Object> calls = new ArrayDeque<>(16); // non-null elements
 	private Customer customer;
 
+	/**
+	 * Creates a writer with the customer metadata needed to serialise Skyve documents.
+	 *
+	 * @param customer customer context, or {@code null} when no Skyve document will be written
+	 */
 	public JSONWriter(@Nullable Customer customer) {
 		this.customer = customer;
 	}
 
+	/**
+	 * Serialises an object graph to JSON, optionally projecting named bean properties.
+	 *
+	 * <p>Records always include a leading {@code class} attribute. Ordinary Java beans
+	 * include it only when {@code propertyNames} is {@code null}; projected beans omit it.
+	 * Repeated references on the active recursion path are written as JSON {@code null}.
+	 *
+	 * @param object root value, or {@code null}
+	 * @param propertyNames projected property names, or {@code null} for a complete value
+	 * @return JSON text; never {@code null}
+	 * @throws IllegalStateException if a Skyve document is supplied without customer metadata
+	 */
 	public @Nonnull String write(@Nullable Object object, @Nullable Set<String> propertyNames) {
 		buf.setLength(0);
 		value(object, propertyNames, true);
 		return buf.toString();
 	}
 
+	/**
+	 * Returns the JSON number representation of a long value.
+	 */
 	public static @Nonnull String write(long n) {
 		return String.valueOf(n);
 	}
 
+	/**
+	 * Returns the JSON number representation of a double value.
+	 */
 	public static @Nonnull String write(double d) {
 		return String.valueOf(d);
 	}
 
+	/**
+	 * Returns a quoted JSON representation of a character.
+	 */
 	public static @Nonnull String write(char c) {
 		return "\"" + c + "\"";
 	}
 
+	/**
+	 * Returns the JSON literal representing a boolean value.
+	 */
 	public static @Nonnull String write(boolean b) {
 		return String.valueOf(b);
 	}
 
-	@SuppressWarnings("java:S3776") // Complexity OK
+	/**
+	 * Writes one value while detecting references already active in the current graph path.
+	 *
+	 * @param object value to write, or {@code null}
+	 * @param propertyNames optional bean projection propagated to nested values
+	 * @param topLevel whether the value is the root projection value
+	 */
 	private void value(@Nullable Object object, @Nullable Set<String> propertyNames, boolean topLevel) {
 		if (object == null || cyclic(object)) {
 			add("null");
 		}
 		else {
 			calls.push(object);
-			if (object instanceof Class<?> type) {
-				string(type.getName());
-			}
-			else if (object instanceof Boolean bool) {
-				bool(bool.booleanValue());
-			}
-			else if (object instanceof Number) {
-				add(object);
-			}
-			else if (object instanceof Date) {
-				string(object.toString());
-			}
-			else if (object instanceof String) {
-				string(object);
-			}
-			else if (object instanceof Character) {
-				string(object);
-			}
-			else if (object instanceof Enumeration enumeration) {
-				string(enumeration.toCode());
-			}
-			else if (object instanceof Enum<?>) {
-				string(object);
-			}
-			else if (object instanceof Map<?, ?>) {
-				map((Map<?, ?>) object, propertyNames, false);
-			}
-			else if (object.getClass().isArray()) {
-				array(object, propertyNames, topLevel);
-			}
-			else if (object instanceof Iterator<?> iterator) {
-				array(iterator, propertyNames, topLevel);
-			}
-			else if (object instanceof Iterable<?> iterable) {
-				array(iterable.iterator(), propertyNames, topLevel);
-			}
-			// if we have properties (we are doing a list projection),
-			// then use the bizId as the bean and don't embed the JSON object
-			else if (object instanceof Bean bean) {
-				if ((propertyNames != null) && (! topLevel)) {
-					string(bean.getBizId());
-				}
-				else {
-					document(bean, propertyNames, false);
-				}
-			}
-			else if (object instanceof OptimisticLock optimisticLock) {
-				string(optimisticLock.toString());
-			}
-			else if (object instanceof Geometry geometry) {
-				string(new WKTWriter().write(geometry));
-			}
-			else {
-				bean(object, propertyNames, false);
-			}
+			writeValue(object, propertyNames, topLevel);
 			calls.pop();
 		}
 	}
 
+	/**
+	 * Dispatches a non-null value to its type-specific writer.
+	 *
+	 * @param object non-null value to write
+	 * @param propertyNames optional bean projection propagated to nested values
+	 * @param topLevel whether the value is the root projection value
+	 */
+	@SuppressWarnings("java:S3776") // Type dispatch is intentionally explicit.
+	private void writeValue(@Nonnull Object object, @Nullable Set<String> propertyNames, boolean topLevel) {
+		if (object instanceof Class<?> type) {
+			string(type.getName());
+		}
+		else if (object instanceof Boolean bool) {
+			bool(bool.booleanValue());
+		}
+		else if (object instanceof Number) {
+			add(object);
+		}
+		else if (object instanceof Date) {
+			string(object.toString());
+		}
+		else if (object instanceof String || object instanceof Character) {
+			string(object);
+		}
+		else if (object instanceof Enumeration enumeration) {
+			string(enumeration.toCode());
+		}
+		else if (object instanceof Enum<?>) {
+			string(object);
+		}
+		else if (object instanceof Map<?, ?> map) {
+			map(map, propertyNames, false);
+		}
+		else if (object.getClass().isArray()) {
+			array(object, propertyNames, topLevel);
+		}
+		else if (object instanceof Iterator<?> iterator) {
+			array(iterator, propertyNames, topLevel);
+		}
+		else if (object instanceof Iterable<?> iterable) {
+			array(iterable.iterator(), propertyNames, topLevel);
+		}
+		// if we have properties (we are doing a list projection),
+		// then use the bizId as the bean and don't embed the JSON object
+		// (Bean first, then record in case a record implements Bean.
+		else if (object instanceof Bean bean) {
+			writeBeanValue(bean, propertyNames, topLevel);
+		}
+		// (Bean first, then record in case a record implements Bean.
+		else if (object.getClass().isRecord()) {
+			recordValue(object, propertyNames);
+		}
+		else if (object instanceof OptimisticLock optimisticLock) {
+			string(optimisticLock.toString());
+		}
+		else if (object instanceof Geometry geometry) {
+			string(new WKTWriter().write(geometry));
+		}
+		else {
+			bean(object, propertyNames, false);
+		}
+	}
+
+	/**
+	 * Writes a Skyve document inline or as a nested bizId reference for a projection.
+	 *
+	 * @param bean document value to write
+	 * @param propertyNames optional document projection
+	 * @param topLevel whether the document is the root projection value
+	 */
+	private void writeBeanValue(@Nonnull Bean bean, @Nullable Set<String> propertyNames, boolean topLevel) {
+		// List projections refer to nested beans by bizId instead of embedding them.
+		if ((propertyNames != null) && (! topLevel)) {
+			string(bean.getBizId());
+		}
+		else {
+			document(bean, propertyNames, false);
+		}
+	}
+
+	/**
+	 * Serialises a Java record as a self-describing JSON object whose properties
+	 * follow record component declaration order.
+	 *
+	 * @param object the record instance to serialise
+	 * @param propertyNames optional projection propagated to nested values
+	 * @throws IllegalStateException if a component accessor cannot be invoked
+	 */
+	private void recordValue(@Nonnull Object object, @Nullable Set<String> propertyNames) {
+		RecordComponent[] components = object.getClass().getRecordComponents();
+		add("{");
+		add("class", object.getClass(), propertyNames, false);
+		if (components.length > 0) {
+			add(',');
+		}
+		for (int i = 0; i < components.length; i++) {
+			RecordComponent component = components[i];
+			Method accessor = component.getAccessor();
+			try {
+				accessor.trySetAccessible();
+				add(component.getName(), accessor.invoke(object), propertyNames, false);
+			}
+			catch (IllegalAccessException | InvocationTargetException e) {
+				Throwable cause = Objects.requireNonNullElse(e.getCause(), e);
+				throw new IllegalStateException("Could not read record component " + component.getName(), cause);
+			}
+			if (i < components.length - 1) {
+				add(',');
+			}
+		}
+		add("}");
+	}
+
+	/**
+	 * Reports whether an object is already active on the current recursion path.
+	 *
+	 * @param object non-null object being considered for writing
+	 * @return {@code true} when writing it again would create a cycle
+	 */
 	private boolean cyclic(@Nonnull Object object) {
 		return calls.contains(object);
 	}
 
+	/**
+	 * Writes an ordinary JavaBean using readable properties accepted by the writer contract.
+	 *
+	 * <p>A leading {@code class} property is included for complete values and omitted
+	 * when a projection is supplied. Reflective accessor failures are logged and the
+	 * JSON object is closed with the properties written successfully up to that point.
+	 *
+	 * @param object non-null JavaBean to inspect
+	 * @param propertyNames projection propagated to property values, or {@code null}
+	 * @param topLevel whether property values are part of the root projection
+	 */
 	@SuppressWarnings("java:S3776") // Complexity OK
 	private void bean(@Nonnull Object object, @Nullable Set<String> propertyNames, boolean topLevel) {
 		boolean firstProperty = true;
@@ -174,8 +288,6 @@ public class JSONWriter {
 				Method accessor = prop.getReadMethod();
 				Method mutator = prop.getWriteMethod();
 				if ((accessor != null) && // has read access
-						// not the hierarchical bean's children property
-						(! (HierarchicalBean.class.isAssignableFrom(type) && "children".equals(name))) &&
 						((mutator != null) || // has write access
 							// errorMessage property in ErrorMessage
 							"errorMessage".equals(name) ||
@@ -183,9 +295,7 @@ public class JSONWriter {
 							Collection.class.isAssignableFrom(prop.getPropertyType()) ||
 							Iterator.class.equals(prop.getPropertyType()) || 
 							Iterable.class.equals(prop.getPropertyType()))) {
-					if (! accessor.canAccess(object)) {
-						accessor.setAccessible(true);
-					}
+					accessor.trySetAccessible();
 					Object value = accessor.invoke(object, (Object[]) null);
 					if (! firstProperty) {
 						add(',');
@@ -195,19 +305,26 @@ public class JSONWriter {
 				}
 			}
 		}
-		catch (IllegalAccessException iae) {
-			LOGGER.error(iae.getMessage(), iae);
-		}
-		catch (InvocationTargetException ite) {
-			LOGGER.error(ite.getCause().getMessage(), ite.getCause());
-			LOGGER.error(ite.getMessage(), ite);
-		}
-		catch (IntrospectionException ie) {
-			LOGGER.error(ie.getMessage(), ie);
+		catch (IllegalAccessException | InvocationTargetException | IntrospectionException e) {
+			Throwable cause = Objects.requireNonNullElse(e.getCause(), e);
+			LOGGER.error(cause.getMessage(), cause);
 		}
 		add("}");
 	}
 
+	/**
+	 * Writes a Skyve document using document metadata or a projected binding set.
+	 *
+	 * <p>Complete documents contain module/document discriminators, declared attributes,
+	 * identity and ownership properties, plus applicable child, hierarchy, and persistence
+	 * state. Projected documents contain the discriminators and requested sanitised bindings.
+	 * Metadata and binding failures after writing begins are logged and the object is closed.
+	 *
+	 * @param bean non-null Skyve document instance
+	 * @param propertyNames requested bindings, or {@code null} for a complete document
+	 * @param topLevel whether projected nested beans should be embedded
+	 * @throws IllegalStateException if this writer has no customer metadata
+	 */
 	@SuppressWarnings("java:S3776") // Complexity OK
 	private void document(@Nonnull Bean bean, @Nullable Set<String> propertyNames, boolean topLevel) {
 		if (customer == null) {
@@ -287,7 +404,7 @@ public class JSONWriter {
 						// do nothing - we try and get bogus properties from map beans in the list views - summary rows for instance
 					}
 					add(',');
-					name = BindUtil.sanitiseBinding(name);
+					name = Objects.requireNonNull(BindUtil.sanitiseBinding(name), "sanitised binding");
 					add(name, value, propertyNames, topLevel);
 				}
 			}
@@ -298,6 +415,14 @@ public class JSONWriter {
 		add("}");
 	}
 
+	/**
+	 * Writes one named JSON property and recursively serialises its value.
+	 *
+	 * @param name property name; must not be {@code null}
+	 * @param value property value, or {@code null}
+	 * @param propertyNames projection propagated to the value, or {@code null}
+	 * @param topLevel whether the value is part of the root projection
+	 */
 	private void add(@Nonnull String name,
 						@Nullable Object value,
 						@Nullable Set<String> propertyNames,
@@ -308,6 +433,13 @@ public class JSONWriter {
 		value(value, propertyNames, topLevel);
 	}
 
+	/**
+	 * Writes map entries in iteration order as a JSON object.
+	 *
+	 * @param map non-null source map
+	 * @param propertyNames projection propagated to keys and values, or {@code null}
+	 * @param topLevel whether entry values are part of the root projection
+	 */
 	private void map(@Nonnull Map<?, ?> map, @Nullable Set<String> propertyNames, boolean topLevel) {
 		add("{");
 		Iterator<?> it = map.entrySet().iterator();
@@ -322,6 +454,15 @@ public class JSONWriter {
 		add("}");
 	}
 
+	/**
+	 * Writes the remaining iterator elements as a JSON array.
+	 *
+	 * <p>Side effects: consumes {@code it} completely.
+	 *
+	 * @param it non-null iterator positioned before its next element
+	 * @param propertyNames projection propagated to elements, or {@code null}
+	 * @param topLevel whether elements are part of the root projection
+	 */
 	private void array(@Nonnull Iterator<?> it, @Nullable Set<String> propertyNames, boolean topLevel) {
 		add("[");
 		while (it.hasNext()) {
@@ -332,6 +473,14 @@ public class JSONWriter {
 		add("]");
 	}
 
+	/**
+	 * Writes a primitive or reference Java array as a JSON array.
+	 *
+	 * @param object non-null Java array
+	 * @param propertyNames projection propagated to elements, or {@code null}
+	 * @param topLevel whether elements are part of the root projection
+	 * @throws IllegalArgumentException if {@code object} is not an array
+	 */
 	private void array(@Nonnull Object object, @Nullable Set<String> propertyNames, boolean topLevel) {
 		add("[");
 		int length = Array.getLength(object);
@@ -343,10 +492,18 @@ public class JSONWriter {
 		add("]");
 	}
 
+	/**
+	 * Writes the JSON literal corresponding to a primitive boolean value.
+	 */
 	private void bool(boolean b) {
-		add(b ? "true" : "false");
+		add(Boolean.toString(b));
 	}
 
+	/**
+	 * Writes an object's string form as a quoted, escaped JSON string.
+	 *
+	 * @param obj non-null value whose {@link Object#toString()} result is written
+	 */
 	private void string(@Nonnull Object obj) {
 		add('"');
 		CharacterIterator it = new StringCharacterIterator(obj.toString());
@@ -385,16 +542,29 @@ public class JSONWriter {
 		add('"');
 	}
 
+	/**
+	 * Appends an object's string form directly to the output buffer.
+	 *
+	 * @param obj value to append; {@code null} appends the text {@code "null"}
+	 */
 	private void add(@Nullable Object obj) {
 		buf.append(obj);
 	}
 
+	/**
+	 * Appends one character directly to the output buffer.
+	 */
 	private void add(char c) {
 		buf.append(c);
 	}
 
 	static char[] hex = "0123456789ABCDEF".toCharArray();
 
+	/**
+	 * Writes a UTF-16 code unit using a four-digit JSON Unicode escape.
+	 *
+	 * @param c code unit to escape
+	 */
 	private void unicode(char c) {
 		add("\\u");
 		int n = c;

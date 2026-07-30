@@ -86,10 +86,14 @@ import jakarta.annotation.Nonnull;
  * <p>Threading: not thread-safe.  The instance is written during loading and
  * read-only afterwards.
  *
+ * <p>Subclass contract: subclasses must preserve the metadata lifecycle. Mutation is
+ * permitted only while repository metadata is being assembled, and resolved instances
+ * must be treated as read-only once published.
+ *
  * @see Document
  * @see ModelImpl
  */
-public final class DocumentImpl extends ModelImpl implements Document {
+public class DocumentImpl extends ModelImpl implements Document {
     private static final long serialVersionUID = 9091172268741052691L;
     private static final Logger BIZLET_LOGGER = Category.BIZLET.logger();
     
