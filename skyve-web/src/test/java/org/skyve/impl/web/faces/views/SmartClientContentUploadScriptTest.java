@@ -44,8 +44,9 @@ class SmartClientContentUploadScriptTest {
 		assertTrue(script.contains("_emptyUploadLink: function (contents)"), script);
 		assertTrue(script.contains("_contentDownloadLink: function (url)"), script);
 		assertTrue(script.contains("_emptyMediaIcon: function (kind)"), script);
-		assertTrue(script.contains("if (kind === \"video\")"), script);
-		assertTrue(script.contains("border-left:0.65rem solid #cbd5e1"), script);
+		assertTrue(script.contains("<i aria-hidden=\"true\" class=\"fa-solid fa-"), script);
+		assertTrue(script.contains("kind === \"video\" ? \"video\" : \"image\""), script);
+		assertTrue(script.contains("font-size:1.8rem"), script);
 		assertTrue(script.contains("this._emptyUploadLink(this._emptyPreviewText())"), script);
 		assertTrue(script.contains("return isc.Canvas.linkHTML("), script);
 		assertTrue(script.contains("'onclick=\"window.open(this.href, this.target);return false\"'"), script);

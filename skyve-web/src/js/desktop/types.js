@@ -3440,18 +3440,10 @@ isc.BizContentItem.addMethods({
 	},
 
 	_emptyMediaIcon: function (kind) {
-		if (kind === "video") {
-			return (
-				'<span style="background:#cbd5e1;border-radius:4px;box-sizing:border-box;display:block;height:1.45rem;margin-bottom:0.35rem;position:relative;width:2rem;">' +
-				'<span style="border-bottom:0.42rem solid transparent;border-left:0.65rem solid #cbd5e1;border-top:0.42rem solid transparent;display:block;height:0;position:absolute;right:-0.55rem;top:0.3rem;width:0;"></span>' +
-				"</span>"
-			);
-		}
 		return (
-			'<span style="border:2px solid #cbd5e1;border-radius:4px;box-sizing:border-box;display:block;height:1.8rem;margin-bottom:0.35rem;position:relative;width:2.4rem;">' +
-			'<span style="background:#cbd5e1;border-radius:50%;display:block;height:0.35rem;position:absolute;right:0.35rem;top:0.35rem;width:0.35rem;"></span>' +
-			'<span style="border-bottom:0.55rem solid #cbd5e1;border-left:0.55rem solid transparent;border-right:0.55rem solid transparent;bottom:0.25rem;display:block;height:0;left:0.35rem;position:absolute;width:0;"></span>' +
-			"</span>"
+			'<i aria-hidden="true" class="fa-solid fa-' +
+			(kind === "video" ? "video" : "image") +
+			'" style="color:#cbd5e1;display:block;font-size:1.8rem;line-height:1;margin-bottom:0.35rem;"></i>'
 		);
 	},
 
