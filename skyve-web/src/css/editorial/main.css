@@ -267,6 +267,12 @@ body .ui-button:hover {
     box-shadow: none !important;
     color: var(--skyve-editorial-button-hover-fg) !important;
 }
+body .ui-selectonebutton > .ui-button.ui-state-active,
+body .ui-selectmanybutton > .ui-button.ui-state-active {
+    background: var(--skyve-editorial-button-hover-bg) !important;
+    border-color: var(--skyve-editorial-button-hover-bg) !important;
+    color: var(--skyve-editorial-button-hover-fg) !important;
+}
 body .ui-button.ui-state-focus,
 body .ui-button:focus {
     box-shadow: 0 0 0 0.2rem var(--skyve-editorial-focus-ring) !important;
