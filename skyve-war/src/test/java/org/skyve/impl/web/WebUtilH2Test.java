@@ -5,6 +5,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.skyve.CORE;
 import org.skyve.EXT;
+import org.skyve.dataaccess.sql.SQLDataAccess;
 import org.skyve.domain.PersistentBean;
 import org.skyve.domain.messages.SessionEndedException;
 import org.skyve.domain.types.Timestamp;
@@ -193,13 +195,20 @@ class WebUtilH2Test extends AbstractH2Test {
 		user.setPasswordResetToken(token);
 		user.setPasswordResetTokenCreationTimestamp(new Timestamp());
 		useDirectBasicUserRole(user);
-		CORE.getPersistence().save(user);
+		user = CORE.getPersistence().save(user);
 		CORE.getPersistence().commit(false);
 		CORE.getPersistence().begin();
 
 		String result = WebUtil.resetPassword(token, "NewPassword0!", "NewPassword0!");
 
-		assertNotNull(result);
+		assertNull(result);
+		try (SQLDataAccess dataAccess = EXT.newSQLDataAccess()) {
+			String persistedToken = dataAccess
+					.newSQL("select passwordResetToken from ADM_SecurityUser where bizId = :bizId")
+					.putParameter("bizId", user.getBizId(), false)
+					.scalarResult(String.class);
+			assertNull(persistedToken);
+		}
 	}
 
 	@Test
