@@ -3,6 +3,41 @@ body,html {
 	padding: 0;
 	height: 100%;
 }
+
+/* Metadata icon and title shared by all PrimeFaces layout themes. */
+.skyve-title {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.625rem;
+	max-width: 100%;
+	min-width: 0;
+	vertical-align: middle;
+}
+.skyve-title-icon {
+	box-sizing: border-box;
+	color: inherit;
+	flex: 0 0 auto;
+	font-size: 1.75rem;
+	height: 2rem;
+	line-height: 2rem;
+	object-fit: contain;
+	width: 2rem;
+}
+.skyve-title-text {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+	.skyve-title {
+		gap: 0.4rem;
+	}
+	.skyve-title-icon {
+		font-size: 1.25rem;
+		height: 1.5rem;
+		line-height: 1.5rem;
+		width: 1.5rem;
+	}
+}
 /* Ensure that there is gaps vertically and horizontally between toolbar buttons */
 .ui-toolbar-group-left, .ui-toolbar-group-right {
 	gap: 5px !important;

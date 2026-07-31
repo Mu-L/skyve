@@ -47,7 +47,9 @@ import org.skyve.domain.ChildBean;
 import org.skyve.domain.DynamicBean;
 import org.skyve.metadata.MetaDataException;
 import org.skyve.metadata.model.document.Bizlet;
+import org.skyve.metadata.model.document.Document;
 import org.skyve.metadata.user.User;
+import org.skyve.metadata.view.View;
 import org.skyve.web.WebContext;
 
 import jakarta.faces.FacesException;
@@ -126,6 +128,93 @@ class FacesViewTest {
 	void titleIsNullByDefault() {
 		FacesView view = new FacesView();
 		assertNull(view.getTitle());
+	}
+
+	@Test
+	void titleIconPrefersViewFontIcon() {
+		Document document = mock(Document.class);
+		View metadataView = mock(View.class);
+		when(metadataView.getIconStyleClass()).thenReturn("fa-solid fa-pen");
+		when(document.getIconStyleClass()).thenReturn("fa-solid fa-file");
+
+		FacesView view = new FacesView();
+		view.setTitleIcon(document, metadataView);
+
+		assertEquals("fa-solid fa-pen", view.getTitleIconStyleClass());
+		assertNull(view.getTitleIconUrl());
+	}
+
+	@Test
+	void titleIconPrefersViewImageToDocumentFontIcon() {
+		Document document = mock(Document.class);
+		View metadataView = mock(View.class);
+		when(document.getOwningModuleName()).thenReturn("admin");
+		when(document.getName()).thenReturn("Contact");
+		when(document.getIconStyleClass()).thenReturn("fa-solid fa-file");
+		when(metadataView.getIcon32x32RelativeFileName()).thenReturn("view.png");
+
+		FacesView view = new FacesView();
+		view.setTitleIcon(document, metadataView);
+
+		assertNull(view.getTitleIconStyleClass());
+		assertEquals("resources?_doc=admin.Contact&_n=view.png", view.getTitleIconUrl());
+	}
+
+	@Test
+	void titleIconUsesViewImageBeforeDocumentImage() {
+		Document document = mock(Document.class);
+		View metadataView = mock(View.class);
+		when(document.getOwningModuleName()).thenReturn("admin");
+		when(document.getName()).thenReturn("Contact");
+		when(document.getIcon32x32RelativeFileName()).thenReturn("document.png");
+		when(metadataView.getIcon32x32RelativeFileName()).thenReturn("view.png");
+
+		FacesView view = new FacesView();
+		view.setTitleIcon(document, metadataView);
+
+		assertNull(view.getTitleIconStyleClass());
+		assertEquals("resources?_doc=admin.Contact&_n=view.png", view.getTitleIconUrl());
+	}
+
+	@Test
+	void titleIconUsesDocumentFontWhenViewHasNoIcon() {
+		Document document = mock(Document.class);
+		View metadataView = mock(View.class);
+		when(document.getIconStyleClass()).thenReturn("fa-solid fa-file");
+
+		FacesView view = new FacesView();
+		view.setTitleIcon(document, metadataView);
+
+		assertEquals("fa-solid fa-file", view.getTitleIconStyleClass());
+		assertNull(view.getTitleIconUrl());
+	}
+
+	@Test
+	void titleIconBuildsDocumentImageResourceUrl() {
+		Document document = mock(Document.class);
+		when(document.getOwningModuleName()).thenReturn("admin");
+		when(document.getName()).thenReturn("Contact");
+		when(document.getIcon32x32RelativeFileName()).thenReturn("document.png");
+
+		FacesView view = new FacesView();
+		view.setTitleIcon(document, null);
+
+		assertNull(view.getTitleIconStyleClass());
+		assertEquals("resources?_doc=admin.Contact&_n=document.png", view.getTitleIconUrl());
+	}
+
+	@Test
+	void titleIconClearsPreviousIconWhenMetadataHasNone() {
+		Document documentWithIcon = mock(Document.class);
+		when(documentWithIcon.getIconStyleClass()).thenReturn("fa-solid fa-file");
+		Document documentWithoutIcon = mock(Document.class);
+
+		FacesView view = new FacesView();
+		view.setTitleIcon(documentWithIcon, null);
+		view.setTitleIcon(documentWithoutIcon, null);
+
+		assertNull(view.getTitleIconStyleClass());
+		assertNull(view.getTitleIconUrl());
 	}
 
 	// ----- modelName -----

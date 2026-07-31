@@ -10,6 +10,8 @@ import org.skyve.content.MimeType;
 import org.skyve.domain.messages.DomainException;
 import org.skyve.domain.messages.MessageException;
 import org.skyve.domain.messages.SessionEndedException;
+import org.skyve.impl.metadata.MetadataIconResolver;
+import org.skyve.impl.metadata.MetadataIconResolver.ResolvedIcon;
 import org.skyve.impl.persistence.AbstractPersistence;
 import org.skyve.impl.web.AbstractWebContext;
 import org.skyve.impl.web.UserAgent;
@@ -29,6 +31,7 @@ import org.skyve.util.Util;
 import org.skyve.util.logging.SkyveLoggerFactory;
 import org.slf4j.Logger;
 
+import jakarta.annotation.Nonnull;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -176,28 +179,8 @@ public class SmartClientGeneratorServlet extends HttpServlet {
 				pw.append("var view=isc.EditView.create({width:'100%',height:'100%',title:'");
 				pw.append("',_mod:'").append(module.getName()).append("',_doc:'").append(document.getName());
 
-				String iconStyleClass = editView.getIconStyleClass();
-				if (iconStyleClass == null) {
-					iconStyleClass = document.getIconStyleClass();
-					if (iconStyleClass != null) {
-						pw.append("',_editFontIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(iconStyleClass));
-					}
-					else {
-						String icon32 = editView.getIcon32x32RelativeFileName();
-						if (icon32 == null) {
-							icon32 = document.getIcon32x32RelativeFileName();
-							if (icon32 != null) {
-								pw.append("',_editIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(icon32));
-							}
-						}
-						else { 
-							pw.append("',_editIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(icon32));
-						}
-					}
-				}
-				else {
-					pw.append("',_editFontIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(iconStyleClass));
-				}
+				ResolvedIcon icon = MetadataIconResolver.resolve(document, editView);
+				appendIcon(pw, "edit", icon);
 
 				String help = editView.getHelpRelativeFileName();
 				if (help != null) {
@@ -211,28 +194,8 @@ public class SmartClientGeneratorServlet extends HttpServlet {
 				}
 
 				// create and edit view are not the same - add the create view icons and help stuff
-				iconStyleClass = createView.getIconStyleClass();
-				if (iconStyleClass == null) {
-					iconStyleClass = document.getIconStyleClass();
-					if (iconStyleClass != null) {
-						pw.append("',_createFontIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(iconStyleClass));
-					}
-					else {
-						String icon32 = createView.getIcon32x32RelativeFileName();
-						if (icon32 == null) {
-							icon32 = document.getIcon32x32RelativeFileName();
-							if (icon32 != null) {
-								pw.append("',_createIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(icon32));
-							}
-						}
-						else { 
-							pw.append("',_createIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(icon32));
-						}
-					}
-				}
-				else {
-					pw.append("',_createFontIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(iconStyleClass));
-				}
+				icon = MetadataIconResolver.resolve(document, createView);
+				appendIcon(pw, "create", icon);
 
 				help = createView.getHelpRelativeFileName();
 				if (help != null) {
@@ -274,6 +237,30 @@ public class SmartClientGeneratorServlet extends HttpServlet {
 			}
 			finally {
 				persistence.commit(true);
+			}
+		}
+	}
+
+	/**
+	 * Appends the SmartClient create/edit property for a resolved icon.
+	 *
+	 * @param writer target JavaScript writer
+	 * @param viewType create or edit property prefix
+	 * @param icon resolved icon metadata
+	 */
+	static void appendIcon(@Nonnull PrintWriter writer,
+							@Nonnull String viewType,
+							@Nonnull ResolvedIcon icon) {
+		String iconStyleClass = icon.iconStyleClass();
+		if (iconStyleClass != null) {
+			writer.append("',_").append(viewType).append("FontIcon:'")
+					.append(OWASP.escapeJsStringWithHtmlFormatting(iconStyleClass));
+		}
+		else {
+			String iconFileName = icon.iconFileName();
+			if (iconFileName != null) {
+				writer.append("',_").append(viewType).append("Icon:'")
+						.append(OWASP.escapeJsStringWithHtmlFormatting(iconFileName));
 			}
 		}
 	}

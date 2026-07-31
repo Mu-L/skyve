@@ -12,6 +12,8 @@ import java.util.TreeSet;
 import org.skyve.domain.Bean;
 import org.skyve.impl.bind.BindUtil;
 import org.skyve.impl.generate.ViewRenderer;
+import org.skyve.impl.metadata.MetadataIconResolver;
+import org.skyve.impl.metadata.MetadataIconResolver.ResolvedIcon;
 import org.skyve.impl.metadata.view.AbsoluteSize;
 import org.skyve.impl.metadata.view.AbsoluteWidth;
 import org.skyve.impl.metadata.view.ActionImpl;
@@ -201,11 +203,10 @@ public class SmartClientViewRenderer extends ViewRenderer {
 	/**
 	 * Starts SmartClient view rendering by creating the top-level container for the active view type.
 	 *
-	 * @param icon16x16Url The icon 16 x 16 url.
-	 * @param icon32x32Url The icon 32 x 32 url.
+	 * @param resolvedIcon resolved root-view icon metadata
 	 */
 	@Override
-	public void renderView(String icon16x16Url, String icon32x32Url) {
+	public void renderView(@Nonnull ResolvedIcon resolvedIcon) {
 		LOGGER.info("VIEW = {} for {}", view.getTitle(), document.getName());
 		Sidebar sidebar = view.getSidebar();
 		if (noCreateView) {
@@ -278,11 +279,10 @@ public class SmartClientViewRenderer extends ViewRenderer {
 	/**
 	 * Finalizes SmartClient view rendering by attaching the generated view container to the root view.
 	 *
-	 * @param icon16x16Url The icon 16 x 16 url.
-	 * @param icon32x32Url The icon 32 x 32 url.
+	 * @param resolvedIcon resolved root-view icon metadata
 	 */
 	@Override
-	public void renderedView(String icon16x16Url, String icon32x32Url) {
+	public void renderedView(@Nonnull ResolvedIcon resolvedIcon) {
 		containerVariables.pop();
 		if (noCreateView) {
 			if (view.getSidebar() != null) {
@@ -4865,16 +4865,8 @@ public class SmartClientViewRenderer extends ViewRenderer {
 		toAppendTo.append('.');
 		toAppendTo.append(drivingDocumentName);
 
-		String icon = drivingDocument.getIconStyleClass();
-		if (icon != null) {
-			toAppendTo.append("',fontIcon:'").append(icon);
-		}
-		else {
-			String icon32 = drivingDocument.getIcon32x32RelativeFileName();
-			if (icon32 != null) {
-				toAppendTo.append("',icon:'").append(icon32);
-			}
-		}
+		ResolvedIcon resolvedIcon = MetadataIconResolver.resolve(drivingDocument, null);
+		appendDataSourceIcon(toAppendTo, resolvedIcon);
 
 		if (! config) {
 			// ensure all filtering is server-side
@@ -5014,6 +5006,25 @@ public class SmartClientViewRenderer extends ViewRenderer {
 		}
 
 		return dataSourceId;
+	}
+
+	/**
+	 * Appends the SmartClient data-source property for a resolved icon.
+	 *
+	 * @param target target data-source definition
+	 * @param icon resolved icon metadata
+	 */
+	static void appendDataSourceIcon(@Nonnull StringBuilder target, @Nonnull ResolvedIcon icon) {
+		String iconStyleClass = icon.iconStyleClass();
+		if (iconStyleClass != null) {
+			target.append("',fontIcon:'").append(OWASP.escapeJsStringWithHtmlFormatting(iconStyleClass));
+		}
+		else {
+			String iconFileName = icon.iconFileName();
+			if (iconFileName != null) {
+				target.append("',icon:'").append(OWASP.escapeJsStringWithHtmlFormatting(iconFileName));
+			}
+		}
 	}
 
 	/**

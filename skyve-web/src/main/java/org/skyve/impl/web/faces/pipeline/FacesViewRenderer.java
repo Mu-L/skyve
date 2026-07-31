@@ -16,6 +16,7 @@ import org.skyve.domain.types.converters.date.YYYY_MM_DD;
 import org.skyve.impl.bind.BindUtil;
 import org.skyve.impl.generate.ViewRenderer;
 import org.skyve.impl.metadata.Container;
+import org.skyve.impl.metadata.MetadataIconResolver.ResolvedIcon;
 import org.skyve.impl.metadata.model.document.field.ConvertibleField;
 import org.skyve.impl.metadata.model.document.field.LengthField;
 import org.skyve.impl.metadata.model.document.field.Text;
@@ -250,11 +251,10 @@ public class FacesViewRenderer extends ViewRenderer {
 	/**
 	 * Starts JSF view rendering by creating the root view container and toolbar/layout scaffolding.
 	 *
-	 * @param icon16x16Url ignored icon URL argument from the renderer contract
-	 * @param icon32x32Url ignored icon URL argument from the renderer contract
+	 * @param resolvedIcon resolved root-view icon metadata
 	 */
 	@Override
-	public void renderView(String icon16x16Url, String icon32x32Url) {
+	public void renderView(@Nonnull ResolvedIcon resolvedIcon) {
 		// Ensure visibility is set for both create and edit views
 		current = cb.view(null, createView);
 		facesView = current;
@@ -275,11 +275,10 @@ public class FacesViewRenderer extends ViewRenderer {
 	/**
 	 * Finalizes JSF view rendering by attaching generated toolbars and deferred scripts.
 	 *
-	 * @param icon16x16Url ignored icon URL argument from the renderer contract
-	 * @param icon32x32Url ignored icon URL argument from the renderer contract
+	 * @param resolvedIcon resolved root-view icon metadata
 	 */
 	@Override
-	public void renderedView(String icon16x16Url, String icon32x32Url) {
+	public void renderedView(@Nonnull ResolvedIcon resolvedIcon) {
 		// Add the toolbar(s) if this is a full view render or
 		// a view with a widgetId = actions widgetId
 		if ((widgetId == null) || widgetId.equals(view.getActionsWidgetId())) {

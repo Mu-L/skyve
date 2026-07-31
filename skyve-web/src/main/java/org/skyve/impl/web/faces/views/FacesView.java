@@ -30,6 +30,8 @@ import org.skyve.domain.messages.SessionEndedException;
 import org.skyve.domain.messages.ValidationException;
 import org.skyve.impl.bind.BindUtil;
 import org.skyve.impl.cache.StateUtil;
+import org.skyve.impl.metadata.MetadataIconResolver;
+import org.skyve.impl.metadata.MetadataIconResolver.ResolvedIcon;
 import org.skyve.impl.metadata.view.widget.Chart.ChartType;
 import org.skyve.impl.metadata.view.widget.FilterParameterImpl;
 import org.skyve.impl.metadata.view.widget.bound.ParameterImpl;
@@ -39,8 +41,8 @@ import org.skyve.impl.metadata.view.widget.bound.input.ContentDisplay;
 import org.skyve.impl.util.ImageUtil;
 import org.skyve.impl.util.UtilImpl;
 import org.skyve.impl.web.AbstractWebContext;
-import org.skyve.impl.web.UserAgent;
 import org.skyve.impl.web.DynamicImageServlet;
+import org.skyve.impl.web.UserAgent;
 import org.skyve.impl.web.content.ContentMediaClassifier;
 import org.skyve.impl.web.content.ContentMediaClassifier.ContentMediaKind;
 import org.skyve.impl.web.faces.FacesAction;
@@ -76,6 +78,7 @@ import org.skyve.metadata.router.UxUi;
 import org.skyve.metadata.user.User;
 import org.skyve.metadata.user.UserAccess;
 import org.skyve.metadata.view.TextOutput.Sanitisation;
+import org.skyve.metadata.view.View;
 import org.skyve.metadata.view.widget.FilterParameter;
 import org.skyve.metadata.view.widget.bound.Parameter;
 import org.skyve.util.OWASP;
@@ -117,6 +120,9 @@ public class FacesView extends HarnessView {
 	private Deque<String> zoomInBindings = new ArrayDeque<>(8); // non-null elements
 	// The page title
 	private String title;
+	// The metadata icon displayed alongside the page title
+	private String titleIconStyleClass;
+	private String titleIconUrl;
 	private AbstractWebContext webContext;
 	// The bean currently under edit (for the view binding)
 	private BeanMapAdapter currentBean = null;
@@ -313,6 +319,49 @@ public class FacesView extends HarnessView {
 	 */
 	public void setTitle(String title) {
 		this.title = title;
+	}
+
+	/**
+	 * Returns the font-icon CSS classes for the current page title.
+	 *
+	 * @return CSS classes from view or document metadata, or {@code null} when an image or no icon is used
+	 */
+	public String getTitleIconStyleClass() {
+		return titleIconStyleClass;
+	}
+
+	/**
+	 * Returns the resource URL for the current page-title image.
+	 *
+	 * @return metadata resource URL, or {@code null} when a font or no icon is used
+	 */
+	public String getTitleIconUrl() {
+		return titleIconUrl;
+	}
+
+	/**
+	 * Resolves the page-title icon using {@link MetadataIconResolver}'s shared contract.
+	 *
+	 * <p>Side effects: replaces both title-icon properties so a font and image cannot be rendered
+	 * together.
+	 *
+	 * @param document document supplying the fallback icon metadata; must not be {@code null}
+	 * @param view optional create or edit view supplying icon metadata
+	 */
+	public void setTitleIcon(Document document, @Nullable View view) {
+		ResolvedIcon icon = MetadataIconResolver.resolve(document, view);
+		String iconStyleClass = icon.iconStyleClass();
+		String iconUrl = null;
+		String iconFileName = icon.iconFileName();
+		if (iconFileName != null) {
+			iconUrl = new StringBuilder(96).append("resources?_doc=")
+											.append(document.getOwningModuleName())
+											.append('.').append(document.getName())
+											.append("&_n=").append(iconFileName).toString();
+		}
+
+		titleIconStyleClass = iconStyleClass;
+		titleIconUrl = iconUrl;
 	}
 
 	/**

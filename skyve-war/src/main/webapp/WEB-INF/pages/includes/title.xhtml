@@ -1,0 +1,12 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+		xmlns:ui="http://java.sun.com/jsf/facelets">
+	<span class="skyve-title">
+		<ui:fragment rendered="#{not empty bean.titleIconStyleClass}">
+			<i class="skyve-title-icon #{bean.titleIconStyleClass}" aria-hidden="true"></i>
+		</ui:fragment>
+		<ui:fragment rendered="#{empty bean.titleIconStyleClass and not empty bean.titleIconUrl}">
+			<img class="skyve-title-icon" src="#{bean.titleIconUrl}&amp;v=#{bean.webResourceFileVersion}" alt="" />
+		</ui:fragment>
+		<span class="skyve-title-text">#{bean.title}</span>
+	</span>
+</ui:composition>

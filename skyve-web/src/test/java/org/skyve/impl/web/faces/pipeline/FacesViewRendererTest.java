@@ -33,6 +33,7 @@ import org.primefaces.component.datatable.DataTable;
 import org.primefaces.component.picklist.PickList;
 import org.skyve.domain.types.converters.Converter;
 import org.skyve.impl.generate.ViewRenderer;
+import org.skyve.impl.metadata.MetadataIconResolver.ResolvedIcon;
 import org.skyve.impl.metadata.customer.CustomerImpl;
 import org.skyve.impl.metadata.model.document.DocumentImpl;
 import org.skyve.impl.metadata.module.ModuleImpl;
@@ -75,6 +76,8 @@ import jakarta.faces.context.FacesContext;
 
 @SuppressWarnings("static-method")
 class FacesViewRendererTest {
+	private static final ResolvedIcon NO_ICON = new ResolvedIcon(null, null);
+
 
 	private abstract static class FacesContextBridge extends FacesContext {
 		static void setCurrent(FacesContext context) {
@@ -116,7 +119,10 @@ class FacesViewRendererTest {
 
 	@AfterEach
 	void clearFacesContext() {
-		FacesContextBridge.setCurrent(null);
+		FacesContext context = FacesContext.getCurrentInstance();
+		if (context != null) {
+			context.release();
+		}
 	}
 
 	@Test
@@ -132,7 +138,7 @@ class FacesViewRendererTest {
 		when(lb.viewLayout(null)).thenReturn(layout);
 
 		FacesViewRenderer renderer = newRenderer(view, null, cb, lb);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		assertEquals(1, root.getChildren().size());
 		assertSame(layout, root.getChildren().get(0));
@@ -151,7 +157,7 @@ class FacesViewRendererTest {
 		when(lb.viewLayout(null)).thenReturn(layout);
 
 		FacesViewRenderer renderer = newRenderer(view, "fragment", cb, lb);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		assertEquals(0, root.getChildren().size());
 	}
@@ -169,7 +175,7 @@ class FacesViewRendererTest {
 		when(lb.viewLayout(null)).thenReturn(null);
 
 		FacesViewRenderer renderer = newRenderer(view, null, cb, lb);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		verify(cb).view(null, true);
 		assertSame(root, renderer.getFacesView());
@@ -202,7 +208,7 @@ class FacesViewRendererTest {
 		when(lb.addToContainer(any(), any(), any(), same(dataTable), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(root);
 
 		FacesViewRenderer renderer = newRenderer(view, null, cb, lb);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 		renderer.getCurrentContainers().push(view);
 		renderer.renderListGrid(null, false, grid);
 
@@ -234,7 +240,7 @@ class FacesViewRendererTest {
 		when(lb.addToContainer(any(), any(), any(), same(dataTable), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(root);
 
 		FacesViewRenderer renderer = newRenderer(view, null, cb, lb);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 		renderer.getCurrentContainers().push(view);
 		renderer.renderListGrid(null, false, grid);
 
@@ -257,7 +263,7 @@ class FacesViewRendererTest {
 		ViewImpl listView = createView(null);
 		listView.setName(ViewType.list.toString());
 		FacesViewRenderer listRenderer = newRenderer(listView, null, cb, lb);
-		listRenderer.renderView(null, null);
+		listRenderer.renderView(NO_ICON);
 		listRenderer.getCurrentContainers().push(listView);
 		TestVueListGridBuilder.lastStickyHeaderAnchorSelector = null;
 		listRenderer.renderListGrid(null, false, grid);
@@ -267,7 +273,7 @@ class FacesViewRendererTest {
 
 		ViewImpl editView = createView(null);
 		FacesViewRenderer editRenderer = newRenderer(editView, null, cb, lb);
-		editRenderer.renderView(null, null);
+		editRenderer.renderView(NO_ICON);
 		editRenderer.getCurrentContainers().push(editView);
 		TestVueListGridBuilder.lastStickyHeaderAnchorSelector = FacesViewRenderer.DEFAULT_STICKY_HEADER_ANCHOR_SELECTOR;
 		editRenderer.renderListGrid(null, false, grid);
@@ -456,8 +462,8 @@ class FacesViewRendererTest {
 		when(lb.viewLayout(null)).thenReturn(null);
 
 		FacesViewRenderer renderer = newRenderer(view, null, cb, lb);
-		renderer.renderView(null, null);
-		renderer.renderedView(null, null);
+		renderer.renderView(NO_ICON);
+		renderer.renderedView(NO_ICON);
 
 		verify(cb).toolbars(null, "actions");
 		verify(lb).addToolbarLayouts(List.of(toolbar), List.of(toolbarLayout));
@@ -479,8 +485,8 @@ class FacesViewRendererTest {
 		when(lb.viewLayout(null)).thenReturn(null);
 
 		FacesViewRenderer renderer = newRenderer(view, null, cb, lb);
-		renderer.renderView(null, null);
-		renderer.renderedView(null, null);
+		renderer.renderView(NO_ICON);
+		renderer.renderedView(NO_ICON);
 
 		verify(lb).addToolbarsOrLayouts(root, List.of(toolbarLayout));
 	}
@@ -500,9 +506,9 @@ class FacesViewRendererTest {
 		when(lb.viewLayout(null)).thenReturn(null);
 
 		FacesViewRenderer renderer = newRenderer(view, null, cb, lb);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> renderer.renderedView(null, null));
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> renderer.renderedView(NO_ICON));
 		assertEquals(String.format("The component Builder %s yielded 2 toolbars but Layout Builder %s yielded 1 toolbar layouts",
 									cb.getClass().getName(),
 									lb.getClass().getName()),
@@ -521,8 +527,8 @@ class FacesViewRendererTest {
 		when(lb.viewLayout(null)).thenReturn(null);
 
 		FacesViewRenderer renderer = newRenderer(view, "fragment", cb, lb);
-		renderer.renderView(null, null);
-		renderer.renderedView(null, null);
+		renderer.renderView(NO_ICON);
+		renderer.renderedView(NO_ICON);
 
 		verify(cb, never()).toolbars(null, "actions");
 	}
@@ -619,7 +625,7 @@ class FacesViewRendererTest {
 		when(cb.action(null, null, null, "Custom", "fa-custom", "tip", "confirm", null, action)).thenReturn(customComponent);
 
 		FacesViewRenderer renderer = newRenderer(view, null, cb, lb);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 		renderer.renderReportAction("report", "Report", null, "fa-report", "tip", "confirm", action);
 		renderer.renderDownloadAction("download", "Download", null, "fa-download", "tip", "confirm", action);
 		renderer.renderUploadAction("upload", "Upload", null, "fa-upload", "tip", "confirm", action);
@@ -662,7 +668,7 @@ class FacesViewRendererTest {
 		when(lb.viewLayout(null)).thenReturn(null);
 
 		FacesViewRenderer renderer = newRenderer(view, null, cb, lb);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 		renderer.renderAddAction("add", "Add", null, "fa-add", "tip", "confirm", action);
 		renderer.renderNavigateAction("navigate", "Navigate", null, "fa-navigate", "tip", "confirm", action);
 		renderer.renderNewAction("new", "New", null, "fa-new", "tip", "confirm", action);
@@ -688,7 +694,7 @@ class FacesViewRendererTest {
 		when(lb.viewLayout(null)).thenReturn(null);
 
 		FacesViewRenderer renderer = newRenderer(view, null, cb, lb);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 		renderer.renderReportAction("report", "Report", null, "fa-report", "tip", "confirm", action);
 		renderer.renderCustomAction("custom", "Custom", null, "fa-custom", "tip", "confirm", action);
 
@@ -871,10 +877,15 @@ class FacesViewRendererTest {
 		return link;
 	}
 
+	@SuppressWarnings("resource") // The installed context is released by clearFacesContext()
 	private static FacesViewRenderer newRenderer(ViewImpl view,
 						String widgetId,
 						ComponentBuilder cb,
 						LayoutBuilder lb) {
+		FacesContext currentContext = FacesContext.getCurrentInstance();
+		if (currentContext != null) {
+			currentContext.release();
+		}
 		FacesContextBridge.setCurrent(new MockFacesContext());
 		CustomerImpl customer = new CustomerImpl();
 		User user = mock(User.class);

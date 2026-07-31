@@ -26,7 +26,9 @@
 		<div class="layout-topbar-right">
 			<div class="layout-topbar-actions-left">
 				<p:outputPanel id="title" layout="inline" styleClass="topbar-title">
-					#{title}
+					<ui:include src="/WEB-INF/pages/includes/title.xhtml">
+						<ui:param name="bean" value="#{bean}" />
+					</ui:include>
 					<p:autoUpdate />
 				</p:outputPanel>
 			</div>

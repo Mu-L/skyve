@@ -57,7 +57,7 @@ import jakarta.faces.context.PartialViewContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-@SuppressWarnings({"static-method", "boxing", "java:S1130", "java:S8692"}) // system clock OK
+@SuppressWarnings({"static-method", "boxing", "java:S1130", "java:S1192", "java:S8692"}) // repeated fixture values aid readability
 class FacesActionsCoverageTest {
 	private abstract static class FacesContextBridge extends FacesContext {
 		static void setCurrent(FacesContext context) {
@@ -137,6 +137,7 @@ class FacesActionsCoverageTest {
 		Customer customer = mock(Customer.class);
 		Module module = mock(Module.class);
 		Document document = mock(Document.class);
+		Document drivingDocument = mock(Document.class);
 		ListModel<Bean> listModel = mock(ListModel.class);
 		bindPersistenceForUser(user);
 
@@ -145,6 +146,7 @@ class FacesActionsCoverageTest {
 		when(module.getDocument(customer, "Contact")).thenReturn(document);
 		when(document.getListModel(customer, "q", true)).thenReturn(listModel);
 		when(listModel.getLocalisedDescription()).thenReturn("List Title");
+		when(listModel.getDrivingDocument()).thenReturn(drivingDocument);
 
 		FacesView facesView = mock(FacesView.class);
 		when(facesView.getBizModuleParameter()).thenReturn("admin");
@@ -155,6 +157,7 @@ class FacesActionsCoverageTest {
 		assertDoesNotThrow(action::callback);
 
 		verify(facesView).setTitle("List Title");
+		verify(facesView).setTitleIcon(drivingDocument, null);
 		verify(facesView).setModelName("q");
 		verify(facesView).setQueryNameParameter(null);
 	}
@@ -164,6 +167,8 @@ class FacesActionsCoverageTest {
 		User user = mock(User.class);
 		Customer customer = mock(Customer.class);
 		Module module = mock(Module.class);
+		Module documentModule = mock(Module.class);
+		Document document = mock(Document.class);
 		MetaDataQueryDefinition query = mock(MetaDataQueryDefinition.class);
 		bindPersistenceForUser(user);
 
@@ -172,6 +177,8 @@ class FacesActionsCoverageTest {
 		when(module.getMetaDataQuery("q")).thenReturn(query);
 		when(query.getDocumentName()).thenReturn("Contact");
 		when(query.getLocalisedDescription()).thenReturn("Query Title");
+		when(query.getDocumentModule(customer)).thenReturn(documentModule);
+		when(documentModule.getDocument(customer, "Contact")).thenReturn(document);
 
 		FacesView facesView = mock(FacesView.class);
 		when(facesView.getBizModuleParameter()).thenReturn("admin");
@@ -183,6 +190,7 @@ class FacesActionsCoverageTest {
 
 		verify(facesView).setBizDocumentParameter("Contact");
 		verify(facesView).setTitle("Query Title");
+		verify(facesView).setTitleIcon(document, null);
 	}
 
 	@Test
@@ -267,6 +275,7 @@ class FacesActionsCoverageTest {
 		assertDoesNotThrow(action::callback);
 
 		verify(facesView).setTitle("<img src=x onerror=alert(1)> Fixed title");
+		verify(facesView).setTitleIcon(document, view);
 	}
 
 	@Test
@@ -574,6 +583,7 @@ class FacesActionsCoverageTest {
 	}
 
 	@Test
+	@SuppressWarnings("java:S2143") // OptimisticLock's public contract still uses java.util.Date
 	void deleteActionThrowsOptimisticLockWhenRetrievedLockDiffers() {
 		User user = mock(User.class);
 		Customer customer = mock(Customer.class);
@@ -896,7 +906,9 @@ class FacesActionsCoverageTest {
 		WebContainer.setHttpServletRequestResponse(request, mock(HttpServletResponse.class));
 	}
 
-	private static void invokeSetupViewForZoomIn(EditAction action, Bean bean, String bindingParameter) throws Exception {
+	@SuppressWarnings("java:S3011") // Exercises private view-binding setup without widening its production visibility
+	private static void invokeSetupViewForZoomIn(EditAction action, Bean bean, String bindingParameter)
+	throws ReflectiveOperationException {
 		Method method = EditAction.class.getDeclaredMethod("setupViewForZoomIn", Bean.class, String.class);
 		method.setAccessible(true);
 		method.invoke(action, bean, bindingParameter);
@@ -925,7 +937,7 @@ class FacesActionsCoverageTest {
 		FacesContextBridge.setCurrent(context);
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "java:S3011"}) // Test cleanup must access the framework-owned thread-local
 	private static void clearThreadPersistence() {
 		try {
 			Field field = AbstractPersistence.class.getDeclaredField("threadLocalPersistence");

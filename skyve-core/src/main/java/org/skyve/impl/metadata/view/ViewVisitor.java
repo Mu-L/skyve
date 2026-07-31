@@ -81,42 +81,71 @@ import org.skyve.metadata.view.Disableable;
 import org.skyve.metadata.view.Invisible;
 import org.skyve.metadata.view.widget.bound.Bound;
 import org.skyve.util.Binder.TargetMetaData;
-import org.slf4j.Logger;
 import org.skyve.util.logging.SkyveLoggerFactory;
+import org.slf4j.Logger;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 /**
  * Abstract visitor that traverses the full widget and action tree of a
  * {@link ViewImpl}, visiting every widget type and every action.
  *
- * <p>Subclasses override the relevant {@code visit*} methods for the widget
- * types they care about.  Use {@link NoOpViewVisitor} to inherit empty
- * implementations and override only the needed methods.
+ * <p>Traversal is depth-first and follows metadata declaration order. Entry
+ * callbacks named {@code visit*} run before nested metadata; matching
+ * {@code visited*} callbacks run after nested metadata. The supplied
+ * {@code parentVisible} and {@code parentEnabled} flags describe the resolved
+ * ancestor state, allowing subclasses to combine it with the current element.
+ * Actions and event actions are dispatched through their type-specific callbacks.
+ *
+ * <p>Subclasses must implement the full callback surface. Use
+ * {@link NoOpViewVisitor} when only selected metadata types are relevant.
  *
  * <p>Threading: not thread-safe; one instance per traversal.
  *
  * @see ActionVisitor
  * @see NoOpViewVisitor
  */
+@SuppressWarnings("java:S6539") // Monster class but should stay cohesive
 public abstract class ViewVisitor extends ActionVisitor {
-	// NB An instance member LOGGER is OK here as this is not Serializable
-    protected final Logger LOGGER = SkyveLoggerFactory.getLogger(getClass());
+	/**
+	 * Logger associated with the concrete visitor type.
+	 * NB An instance member LOGGER is OK here as this is not Serializable.
+	 */
+	@SuppressWarnings("java:S116") // LOGGER is OK as we treat it like a constant
+	protected final Logger LOGGER = SkyveLoggerFactory.getLogger(getClass());
 
-	protected CustomerImpl customer;
-	protected ModuleImpl module;
-	protected DocumentImpl document;
-	protected ViewImpl view;
-	protected String currentUxUi; // for resolving components
-	// Use TargetMetaData to resolve default widgets in data grids/repeaters
+	/** Customer supplying localised metadata and overrides for this traversal. */
+	protected @Nonnull CustomerImpl customer;
+	/** Module owning the traversed view. */
+	protected @Nonnull ModuleImpl module;
+	/** Document against which bindings and default widgets are resolved. */
+	protected @Nonnull DocumentImpl document;
+	/** Root view traversed by {@link #visit()}. */
+	protected @Nonnull ViewImpl view;
+	/** UX/UI profile used to resolve component fragments. */
+	protected @Nonnull String currentUxUi; // for resolving components
+	/**
+	 * Whether data-widget columns resolve default inputs from target metadata.
+	 * Use TargetMetaData to resolve default widgets in data grids/repeaters
+	 */
 	// Note - we don't want to do this when adding binding prefixes to component fragments
 	protected boolean useMetaData = true;
 	
-	protected ViewVisitor(CustomerImpl customer,
-							ModuleImpl module,
-							DocumentImpl document,
-							ViewImpl view,
-							String currentUxUi) {
+	/**
+	 * Creates a visitor for one resolved customer, module, document, view, and UX/UI context.
+	 *
+	 * @param customer the customer supplying metadata overrides; must not be null
+	 * @param module the module owning the view; must not be null
+	 * @param document the document owning the view; must not be null
+	 * @param view the view metadata to traverse; must not be null
+	 * @param currentUxUi the UX/UI profile used to resolve component fragments; must not be null
+	 */
+	protected ViewVisitor(@Nonnull CustomerImpl customer,
+							@Nonnull ModuleImpl module,
+							@Nonnull DocumentImpl document,
+							@Nonnull ViewImpl view,
+							@Nonnull String currentUxUi) {
 		this.customer = customer;
 		this.module = module;
 		this.document = document;
@@ -124,198 +153,643 @@ public abstract class ViewVisitor extends ActionVisitor {
 		this.currentUxUi = currentUxUi;
 	}
 
+	/**
+	 * Traverses the complete root view, including contained widgets, sidebar metadata, and actions.
+	 */
 	public final void visit() {
 		visitContainer(view, true, true);
 	}
 	
 	/**
-	 * Set whether to use TargetMetaData to resolve default widgets in data grids/repeaters.
-	 * @param useMetaData	The value to set.
+	 * Sets whether data-widget columns resolve their default inputs from target metadata.
+	 *
+	 * <p>Disabling resolution makes unresolved columns fall back to the business-key
+	 * input widget, which is useful while rewriting component-fragment bindings.
+	 *
+	 * @param useMetaData whether target metadata should determine default input widgets
 	 */
 	protected final void setUseMetaData(boolean useMetaData) {
 		this.useMetaData = useMetaData;
 	}
-	
+
+	/**
+	 * Begins visitation of the root view before any contained metadata.
+	 */
 	public abstract void visitView();
+
+	/**
+	 * Completes visitation of the root view after contained metadata and actions.
+	 */
 	public abstract void visitedView();
 
-	public abstract void visitTabPane(TabPane tabPane,
+	/**
+	 * Visits the tab pane in the current traversal context.
+	 *
+	 * @param tabPane the tab pane metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitTabPane(@Nonnull TabPane tabPane,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitedTabPane(TabPane tabPane,
+
+	/**
+	 * Completes visitation of the tab pane after its child metadata.
+	 *
+	 * @param tabPane the tab pane metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedTabPane(@Nonnull TabPane tabPane,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitTab(Tab tab,
+
+	/**
+	 * Visits the tab in the current traversal context.
+	 *
+	 * @param tab the tab metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitTab(@Nonnull Tab tab,
 									boolean parentVisible,
 									boolean parentEnabled);
-	public abstract void visitedTab(Tab tab,
+
+	/**
+	 * Completes visitation of the tab after its child metadata.
+	 *
+	 * @param tab the tab metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedTab(@Nonnull Tab tab,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitVBox(VBox vbox,
+
+	/**
+	 * Visits the vertical box in the current traversal context.
+	 *
+	 * @param vbox the vbox metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitVBox(@Nonnull VBox vbox,
 									boolean parentVisible,
 									boolean parentEnabled);
 
-	public abstract void visitedVBox(VBox vbox,
+	/**
+	 * Completes visitation of the vertical box after its child metadata.
+	 *
+	 * @param vbox the vbox metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedVBox(@Nonnull VBox vbox,
 										boolean parentVisible,
 										boolean parentEnabled);
 
-	public abstract void visitSidebar(Sidebar sidebar,
+	/**
+	 * Visits the sidebar in the current traversal context.
+	 *
+	 * @param sidebar the sidebar metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitSidebar(@Nonnull Sidebar sidebar,
 										boolean parentVisible,
 										boolean parentEnabled);
 
-	public abstract void visitedSidebar(Sidebar sidebar,
+	/**
+	 * Completes visitation of the sidebar after its child metadata.
+	 *
+	 * @param sidebar the sidebar metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedSidebar(@Nonnull Sidebar sidebar,
 			boolean parentVisible,
 			boolean parentEnabled);
 
-	public abstract void visitHBox(HBox hbox,
+	/**
+	 * Visits the horizontal box in the current traversal context.
+	 *
+	 * @param hbox the hbox metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitHBox(@Nonnull HBox hbox,
 									boolean parentVisible,
 									boolean parentEnabled);
-	public abstract void visitedHBox(HBox hbox,
+
+	/**
+	 * Completes visitation of the horizontal box after its child metadata.
+	 *
+	 * @param hbox the hbox metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedHBox(@Nonnull HBox hbox,
 										boolean parentVisible,
 										boolean parentEnabled);
 
 	// form
-	public abstract void visitForm(Form form, 
+	
+	/**
+	 * Visits the form in the current traversal context.
+	 *
+	 * @param form the form metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitForm(@Nonnull Form form,
 									boolean parentVisible,
 									boolean parentEnabled);
-	public abstract void visitedForm(Form form,
+
+	/**
+	 * Completes visitation of the form after its child metadata.
+	 *
+	 * @param form the form metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedForm(@Nonnull Form form,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitFormColumn(FormColumn column,
+
+	/**
+	 * Visits the form column in the current traversal context.
+	 *
+	 * @param column the column metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitFormColumn(@Nonnull FormColumn column,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitFormRow(FormRow row,
+
+	/**
+	 * Visits the form row in the current traversal context.
+	 *
+	 * @param row the row metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitFormRow(@Nonnull FormRow row,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitFormItem(FormItem item,
+
+	/**
+	 * Visits the form item in the current traversal context.
+	 *
+	 * @param item the item metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitFormItem(@Nonnull FormItem item,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitedFormItem(FormItem item,
+
+	/**
+	 * Completes visitation of the form item after its child metadata.
+	 *
+	 * @param item the item metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedFormItem(@Nonnull FormItem item,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitedFormRow(FormRow row,
+
+	/**
+	 * Completes visitation of the form row after its child metadata.
+	 *
+	 * @param row the row metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedFormRow(@Nonnull FormRow row,
 											boolean parentVisible,
 											boolean parentEnabled);
 
 	// widgets
-	public abstract void visitButton(Button button,
+	
+	/**
+	 * Visits the button in the current traversal context.
+	 *
+	 * @param button the button metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitButton(@Nonnull Button button,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitZoomIn(ZoomIn zoomIn,
+
+	/**
+	 * Visits the zoom in in the current traversal context.
+	 *
+	 * @param zoomIn the zoom in metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitZoomIn(@Nonnull ZoomIn zoomIn,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitGeometry(Geometry geometry,
+
+	/**
+	 * Visits the geometry in the current traversal context.
+	 *
+	 * @param geometry the geometry metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitGeometry(@Nonnull Geometry geometry,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitedGeometry(Geometry geometry,
+
+	/**
+	 * Completes visitation of the geometry after its child metadata.
+	 *
+	 * @param geometry the geometry metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedGeometry(@Nonnull Geometry geometry,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitGeometryMap(GeometryMap geometry,
+
+	/**
+	 * Visits the geometry map in the current traversal context.
+	 *
+	 * @param geometry the geometry metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitGeometryMap(@Nonnull GeometryMap geometry,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitedGeometryMap(GeometryMap geometry,
+
+	/**
+	 * Completes visitation of the geometry map after its child metadata.
+	 *
+	 * @param geometry the geometry metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedGeometryMap(@Nonnull GeometryMap geometry,
 												boolean parentVisible,
 												boolean parentEnabled);
-	public abstract void visitMap(MapDisplay map,
-									boolean parentVisible,
-									boolean parentEnabled);
-	public abstract void visitChart(Chart chart,
-										boolean parentVisible,
-										boolean parentEnabled);
-	public abstract void visitDialogButton(DialogButton button,
-											boolean parentVisible,
-											boolean parentEnabled);
-	public abstract void visitDynamicImage(DynamicImage image,
-											boolean parentVisible,
-											boolean parentEnabled);
-	public abstract void visitSpacer(Spacer spacer);
-	public abstract void visitStaticImage(StaticImage image,
-											boolean parentVisible,
-											boolean parentEnabled);
-	public abstract void visitLink(Link link,
+
+	/**
+	 * Visits the map in the current traversal context.
+	 *
+	 * @param map the map metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitMap(@Nonnull MapDisplay map,
 									boolean parentVisible,
 									boolean parentEnabled);
 
-	public abstract void visitBlurb(Blurb blurb,
+	/**
+	 * Visits the chart in the current traversal context.
+	 *
+	 * @param chart the chart metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitChart(@Nonnull Chart chart,
+										boolean parentVisible,
+										boolean parentEnabled);
+
+	/**
+	 * Visits the dialog button in the current traversal context.
+	 *
+	 * @param button the button metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitDialogButton(@Nonnull DialogButton button,
+											boolean parentVisible,
+											boolean parentEnabled);
+
+	/**
+	 * Visits the dynamic image in the current traversal context.
+	 *
+	 * @param image the image metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitDynamicImage(@Nonnull DynamicImage image,
+											boolean parentVisible,
+											boolean parentEnabled);
+
+	/**
+	 * Visits the spacer in the current traversal context.
+	 *
+	 * @param spacer the spacer metadata; must not be null
+	 */
+	public abstract void visitSpacer(@Nonnull Spacer spacer);
+
+	/**
+	 * Visits the static image in the current traversal context.
+	 *
+	 * @param image the image metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitStaticImage(@Nonnull StaticImage image,
+											boolean parentVisible,
+											boolean parentEnabled);
+
+	/**
+	 * Visits the link in the current traversal context.
+	 *
+	 * @param link the link metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitLink(@Nonnull Link link,
+									boolean parentVisible,
+									boolean parentEnabled);
+
+	/**
+	 * Visits the blurb in the current traversal context.
+	 *
+	 * @param blurb the blurb metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitBlurb(@Nonnull Blurb blurb,
 										boolean parentVisible,
 										boolean parentEnabled);
 	
 	// bound widgets
-	public abstract void visitLabel(Label label,
+	/**
+	 * Visits the label in the current traversal context.
+	 *
+	 * @param label the localised label, or null when no label is rendered
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitLabel(@Nonnull Label label,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitProgressBar(ProgressBar progressBar,
+
+	/**
+	 * Visits the progress bar in the current traversal context.
+	 *
+	 * @param progressBar the progress bar metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitProgressBar(@Nonnull ProgressBar progressBar,
 											boolean parentVisible,
 											boolean parentEnabled);
 
 	// tabular widgets
-	public abstract void visitListGrid(ListGrid grid,
+	/**
+	 * Visits the list grid in the current traversal context.
+	 *
+	 * @param grid the grid metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitListGrid(@Nonnull ListGrid grid,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitedListGrid(ListGrid grid,
+
+	/**
+	 * Completes visitation of the list grid after its child metadata.
+	 *
+	 * @param grid the grid metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedListGrid(@Nonnull ListGrid grid,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitListRepeater(ListRepeater repeater,
+
+	/**
+	 * Visits the list repeater in the current traversal context.
+	 *
+	 * @param repeater the repeater metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitListRepeater(@Nonnull ListRepeater repeater,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitedListRepeater(ListRepeater repeater,
+
+	/**
+	 * Completes visitation of the list repeater after its child metadata.
+	 *
+	 * @param repeater the repeater metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedListRepeater(@Nonnull ListRepeater repeater,
 												boolean parentVisible,
 												boolean parentEnabled);
-	public abstract void visitTreeGrid(TreeGrid grid,
+
+	/**
+	 * Visits the tree grid in the current traversal context.
+	 *
+	 * @param grid the grid metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitTreeGrid(@Nonnull TreeGrid grid,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitedTreeGrid(TreeGrid grid,
+
+	/**
+	 * Completes visitation of the tree grid after its child metadata.
+	 *
+	 * @param grid the grid metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedTreeGrid(@Nonnull TreeGrid grid,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitDataGrid(DataGrid grid,
+
+	/**
+	 * Visits the data grid in the current traversal context.
+	 *
+	 * @param grid the grid metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitDataGrid(@Nonnull DataGrid grid,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitedDataGrid(DataGrid grid,
+
+	/**
+	 * Completes visitation of the data grid after its child metadata.
+	 *
+	 * @param grid the grid metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedDataGrid(@Nonnull DataGrid grid,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitDataRepeater(DataRepeater repeater,
+
+	/**
+	 * Visits the data repeater in the current traversal context.
+	 *
+	 * @param repeater the repeater metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitDataRepeater(@Nonnull DataRepeater repeater,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitedDataRepeater(DataRepeater repeater,
+
+	/**
+	 * Completes visitation of the data repeater after its child metadata.
+	 *
+	 * @param repeater the repeater metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedDataRepeater(@Nonnull DataRepeater repeater,
 												boolean parentVisible,
 												boolean parentEnabled);
-	public abstract void visitDataGridBoundColumn(DataGridBoundColumn column,
+
+	/**
+	 * Visits the data grid bound column in the current traversal context.
+	 *
+	 * @param column the column metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitDataGridBoundColumn(@Nonnull DataGridBoundColumn column,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitedDataGridBoundColumn(DataGridBoundColumn column,
+
+	/**
+	 * Completes visitation of the data grid bound column after its child metadata.
+	 *
+	 * @param column the column metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedDataGridBoundColumn(@Nonnull DataGridBoundColumn column,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitDataGridContainerColumn(DataGridContainerColumn column,
+
+	/**
+	 * Visits the data grid container column in the current traversal context.
+	 *
+	 * @param column the column metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitDataGridContainerColumn(@Nonnull DataGridContainerColumn column,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitedDataGridContainerColumn(DataGridContainerColumn column,
+
+	/**
+	 * Completes visitation of the data grid container column after its child metadata.
+	 *
+	 * @param column the column metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedDataGridContainerColumn(@Nonnull DataGridContainerColumn column,
 															boolean parentVisible,
 															boolean parentEnabled);
 	// input widgets
-	public abstract void visitCheckBox(CheckBox checkBox,
+	
+	/**
+	 * Visits the check box in the current traversal context.
+	 *
+	 * @param checkBox the check box metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitCheckBox(@Nonnull CheckBox checkBox,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitedCheckBox(CheckBox checkBox,
+
+	/**
+	 * Completes visitation of the check box after its child metadata.
+	 *
+	 * @param checkBox the check box metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedCheckBox(@Nonnull CheckBox checkBox,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitCheckMembership(CheckMembership membership,
+
+	/**
+	 * Visits the check membership in the current traversal context.
+	 *
+	 * @param membership the membership metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitCheckMembership(@Nonnull CheckMembership membership,
 												boolean parentVisible,
 												boolean parentEnabled);
-	public abstract void visitedCheckMembership(CheckMembership membership,
+
+	/**
+	 * Completes visitation of the check membership after its child metadata.
+	 *
+	 * @param membership the membership metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedCheckMembership(@Nonnull CheckMembership membership,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitColourPicker(ColourPicker colour,
+
+	/**
+	 * Visits the colour picker in the current traversal context.
+	 *
+	 * @param colour the colour metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitColourPicker(@Nonnull ColourPicker colour,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitedColourPicker(ColourPicker colour,
+
+	/**
+	 * Completes visitation of the colour picker after its child metadata.
+	 *
+	 * @param colour the colour metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedColourPicker(@Nonnull ColourPicker colour,
 												boolean parentVisible,
 												boolean parentEnabled);
-	public abstract void visitCombo(Combo combo,
+
+	/**
+	 * Visits the combo in the current traversal context.
+	 *
+	 * @param combo the combo metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitCombo(@Nonnull Combo combo,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitedCombo(Combo combo,
+
+	/**
+	 * Completes visitation of the combo after its child metadata.
+	 *
+	 * @param combo the combo metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedCombo(@Nonnull Combo combo,
 										boolean parentVisible,
 										boolean parentEnabled);
+
 	/**
 	 * Visits a managed-content upload.
 	 *
@@ -326,144 +800,512 @@ public abstract class ViewVisitor extends ActionVisitor {
 	public abstract void visitContent(@Nonnull ContentUpload content,
 										boolean parentVisible,
 										boolean parentEnabled);
-	public abstract void visitContentSignature(ContentSignature signature,
+
+	/**
+	 * Visits the content signature in the current traversal context.
+	 *
+	 * @param signature the signature metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitContentSignature(@Nonnull ContentSignature signature,
 												boolean parentVisible,
 												boolean parentEnabled);
-	public abstract void visitHTML(HTML html,
+
+	/**
+	 * Visits the HTML widget in the current traversal context.
+	 *
+	 * @param html the HTML-widget metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitHTML(@Nonnull HTML html,
 									boolean parentVisible,
 									boolean parentEnabled);
-	public abstract void visitListMembership(ListMembership membership,
+
+	/**
+	 * Visits the list membership in the current traversal context.
+	 *
+	 * @param membership the membership metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitListMembership(@Nonnull ListMembership membership,
 												boolean parentVisible,
 												boolean parentEnabled);
-	public abstract void visitedListMembership(ListMembership membership,
+
+	/**
+	 * Completes visitation of the list membership after its child metadata.
+	 *
+	 * @param membership the membership metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedListMembership(@Nonnull ListMembership membership,
 												boolean parentVisible,
 												boolean parentEnabled);
-	public abstract void visitComparison(Comparison comparison,
+
+	/**
+	 * Visits the comparison in the current traversal context.
+	 *
+	 * @param comparison the comparison metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitComparison(@Nonnull Comparison comparison,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitLookupDescription(LookupDescription lookup,
+
+	/**
+	 * Visits the lookup description in the current traversal context.
+	 *
+	 * @param lookup the lookup metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitLookupDescription(@Nonnull LookupDescription lookup,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitedLookupDescription(LookupDescription lookup,
+
+	/**
+	 * Completes visitation of the lookup description after its child metadata.
+	 *
+	 * @param lookup the lookup metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedLookupDescription(@Nonnull LookupDescription lookup,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitPassword(Password password,
-										boolean parentVisible,
-										boolean parentEnabled);
-	public abstract void visitedPassword(Password password,
-											boolean parentVisible,
-											boolean parentEnabled);
-	public abstract void visitRadio(Radio radio,
-										boolean parentVisible,
-										boolean parentEnabled);
-	public abstract void visitedRadio(Radio radio,
-										boolean parentVisible,
-										boolean parentEnabled);
-	public abstract void visitRichText(RichText richText,
-										boolean parentVisible,
-										boolean parentEnabled);
-	public abstract void visitedRichText(RichText richText,
-											boolean parentVisible,
-											boolean parentEnabled);
-	public abstract void visitSlider(Slider slider,
-										boolean parentVisible,
-										boolean parentEnabled);
-	public abstract void visitedSlider(Slider slider,
-										boolean parentVisible,
-										boolean parentEnabled);
-	public abstract void visitSpinner(Spinner spinner,
-										boolean parentVisible,
-										boolean parentEnabled);
-	public abstract void visitedSpinner(Spinner spinner,
-											boolean parentVisible,
-											boolean parentEnabled);
-	public abstract void visitTextArea(TextArea text,
-										boolean parentVisible,
-										boolean parentEnabled);
-	public abstract void visitedTextArea(TextArea text,
-											boolean parentVisible,
-											boolean parentEnabled);
-	public abstract void visitTextField(TextField text,
-											boolean parentVisible,
-											boolean parentEnabled);
-	public abstract void visitedTextField(TextField text,
-											boolean parentVisible,
-											boolean parentEnabled);
-	public abstract void visitInject(Inject inject,
+
+	/**
+	 * Visits the password in the current traversal context.
+	 *
+	 * @param password the password metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitPassword(@Nonnull Password password,
 										boolean parentVisible,
 										boolean parentEnabled);
 
-	public abstract void visitOnChangedEventHandler(Changeable changeable,
+	/**
+	 * Completes visitation of the password after its child metadata.
+	 *
+	 * @param password the password metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedPassword(@Nonnull Password password,
+											boolean parentVisible,
+											boolean parentEnabled);
+
+	/**
+	 * Visits the radio in the current traversal context.
+	 *
+	 * @param radio the radio metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitRadio(@Nonnull Radio radio,
+										boolean parentVisible,
+										boolean parentEnabled);
+
+	/**
+	 * Completes visitation of the radio after its child metadata.
+	 *
+	 * @param radio the radio metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedRadio(@Nonnull Radio radio,
+										boolean parentVisible,
+										boolean parentEnabled);
+
+	/**
+	 * Visits the rich text in the current traversal context.
+	 *
+	 * @param richText the rich text metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitRichText(@Nonnull RichText richText,
+										boolean parentVisible,
+										boolean parentEnabled);
+
+	/**
+	 * Completes visitation of the rich text after its child metadata.
+	 *
+	 * @param richText the rich text metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedRichText(@Nonnull RichText richText,
+											boolean parentVisible,
+											boolean parentEnabled);
+
+	/**
+	 * Visits the slider in the current traversal context.
+	 *
+	 * @param slider the slider metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitSlider(@Nonnull Slider slider,
+										boolean parentVisible,
+										boolean parentEnabled);
+
+	/**
+	 * Completes visitation of the slider after its child metadata.
+	 *
+	 * @param slider the slider metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedSlider(@Nonnull Slider slider,
+										boolean parentVisible,
+										boolean parentEnabled);
+
+	/**
+	 * Visits the spinner in the current traversal context.
+	 *
+	 * @param spinner the spinner metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitSpinner(@Nonnull Spinner spinner,
+										boolean parentVisible,
+										boolean parentEnabled);
+
+	/**
+	 * Completes visitation of the spinner after its child metadata.
+	 *
+	 * @param spinner the spinner metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedSpinner(@Nonnull Spinner spinner,
+											boolean parentVisible,
+											boolean parentEnabled);
+
+	/**
+	 * Visits the text area in the current traversal context.
+	 *
+	 * @param text the text metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitTextArea(@Nonnull TextArea text,
+										boolean parentVisible,
+										boolean parentEnabled);
+
+	/**
+	 * Completes visitation of the text area after its child metadata.
+	 *
+	 * @param text the text metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedTextArea(@Nonnull TextArea text,
+											boolean parentVisible,
+											boolean parentEnabled);
+
+	/**
+	 * Visits the text field in the current traversal context.
+	 *
+	 * @param text the text metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitTextField(@Nonnull TextField text,
+											boolean parentVisible,
+											boolean parentEnabled);
+
+	/**
+	 * Completes visitation of the text field after its child metadata.
+	 *
+	 * @param text the text metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedTextField(@Nonnull TextField text,
+											boolean parentVisible,
+											boolean parentEnabled);
+
+	/**
+	 * Visits the inject in the current traversal context.
+	 *
+	 * @param inject the inject metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitInject(@Nonnull Inject inject,
+										boolean parentVisible,
+										boolean parentEnabled);
+
+	/**
+	 * Visits the on changed event handler before any associated child metadata.
+	 *
+	 * @param changeable the changeable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitOnChangedEventHandler(@Nonnull Changeable changeable,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitedOnChangedEventHandler(Changeable changeable,
+
+	/**
+	 * Completes visitation of the on changed event handler after its child metadata.
+	 *
+	 * @param changeable the changeable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedOnChangedEventHandler(@Nonnull Changeable changeable,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitOnFocusEventHandler(Focusable blurable,
+
+	/**
+	 * Visits the on focus event handler before any associated child metadata.
+	 *
+	 * @param blurable the blurable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitOnFocusEventHandler(@Nonnull Focusable blurable,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitedOnFocusEventHandler(Focusable blurable,
+
+	/**
+	 * Completes visitation of the on focus event handler after its child metadata.
+	 *
+	 * @param blurable the blurable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedOnFocusEventHandler(@Nonnull Focusable blurable,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitOnBlurEventHandler(Focusable blurable,
+
+	/**
+	 * Visits the on blur event handler before any associated child metadata.
+	 *
+	 * @param blurable the blurable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitOnBlurEventHandler(@Nonnull Focusable blurable,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitedOnBlurEventHandler(Focusable blurable,
+
+	/**
+	 * Completes visitation of the on blur event handler after its child metadata.
+	 *
+	 * @param blurable the blurable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedOnBlurEventHandler(@Nonnull Focusable blurable,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitOnAddedEventHandler(Addable addable,
+
+	/**
+	 * Visits the on added event handler before any associated child metadata.
+	 *
+	 * @param addable the addable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitOnAddedEventHandler(@Nonnull Addable addable,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitedOnAddedEventHandler(Addable addable,
+
+	/**
+	 * Completes visitation of the on added event handler after its child metadata.
+	 *
+	 * @param addable the addable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedOnAddedEventHandler(@Nonnull Addable addable,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitOnEditedEventHandler(Editable editable,
+
+	/**
+	 * Visits the on edited event handler before any associated child metadata.
+	 *
+	 * @param editable the editable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitOnEditedEventHandler(@Nonnull Editable editable,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitedOnEditedEventHandler(Editable editable,
+
+	/**
+	 * Completes visitation of the on edited event handler after its child metadata.
+	 *
+	 * @param editable the editable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedOnEditedEventHandler(@Nonnull Editable editable,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitOnRemovedEventHandler(Removable removable,
+
+	/**
+	 * Visits the on removed event handler before any associated child metadata.
+	 *
+	 * @param removable the removable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitOnRemovedEventHandler(@Nonnull Removable removable,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitedOnRemovedEventHandler(Removable removable,
+
+	/**
+	 * Completes visitation of the on removed event handler after its child metadata.
+	 *
+	 * @param removable the removable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedOnRemovedEventHandler(@Nonnull Removable removable,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitOnSelectedEventHandler(Selectable selectable,
+
+	/**
+	 * Visits the on selected event handler before any associated child metadata.
+	 *
+	 * @param selectable the selectable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitOnSelectedEventHandler(@Nonnull Selectable selectable,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitedOnSelectedEventHandler(Selectable selectable,
+
+	/**
+	 * Completes visitation of the on selected event handler after its child metadata.
+	 *
+	 * @param selectable the selectable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedOnSelectedEventHandler(@Nonnull Selectable selectable,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitOnPickedEventHandler(LookupDescription lookup,
+
+	/**
+	 * Visits the on picked event handler before any associated child metadata.
+	 *
+	 * @param lookup the lookup metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitOnPickedEventHandler(@Nonnull LookupDescription lookup,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitedOnPickedEventHandler(LookupDescription lookup,
+
+	/**
+	 * Completes visitation of the on picked event handler after its child metadata.
+	 *
+	 * @param lookup the lookup metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedOnPickedEventHandler(@Nonnull LookupDescription lookup,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitOnClearedEventHandler(LookupDescription lookup,
+
+	/**
+	 * Visits the on cleared event handler before any associated child metadata.
+	 *
+	 * @param lookup the lookup metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitOnClearedEventHandler(@Nonnull LookupDescription lookup,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitedOnClearedEventHandler(LookupDescription lookup,
+
+	/**
+	 * Completes visitation of the on cleared event handler after its child metadata.
+	 *
+	 * @param lookup the lookup metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitedOnClearedEventHandler(@Nonnull LookupDescription lookup,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitRerenderEventAction(RerenderEventAction rerender,
-													EventSource source,
+
+	/**
+	 * Visits the rerender event action in the current traversal context.
+	 *
+	 * @param rerender the rerender metadata; must not be null
+	 * @param source the metadata source that owns the event action; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitRerenderEventAction(@Nonnull RerenderEventAction rerender,
+													@Nonnull EventSource source,
 													boolean parentVisible,
 													boolean parentEnabled);
-	public abstract void visitServerSideActionEventAction(ServerSideActionEventAction server,
+
+	/**
+	 * Visits the server side action event action in the current traversal context.
+	 *
+	 * @param server the server metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitServerSideActionEventAction(@Nonnull ServerSideActionEventAction server,
 															boolean parentVisible,
 															boolean parentEnabled);
-	public abstract void visitSetDisabledEventAction(SetDisabledEventAction setDisabled,
+
+	/**
+	 * Visits the set disabled event action in the current traversal context.
+	 *
+	 * @param setDisabled the set disabled metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitSetDisabledEventAction(@Nonnull SetDisabledEventAction setDisabled,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitSetInvisibleEventAction(SetInvisibleEventAction setInvisible,
+
+	/**
+	 * Visits the set invisible event action in the current traversal context.
+	 *
+	 * @param setInvisible the set invisible metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitSetInvisibleEventAction(@Nonnull SetInvisibleEventAction setInvisible,
 														boolean parentVisible,
 														boolean parentEnabled);
-	public abstract void visitToggleDisabledEventAction(ToggleDisabledEventAction toggleDisabled,
+
+	/**
+	 * Visits the toggle disabled event action in the current traversal context.
+	 *
+	 * @param toggleDisabled the toggle disabled metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitToggleDisabledEventAction(@Nonnull ToggleDisabledEventAction toggleDisabled,
 															boolean parentVisible,
 															boolean parentEnabled);
-	public abstract void visitToggleVisibilityEventAction(ToggleVisibilityEventAction toggleVisibility,
+
+	/**
+	 * Visits the toggle visibility event action in the current traversal context.
+	 *
+	 * @param toggleVisibility the toggle visibility metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitToggleVisibilityEventAction(@Nonnull ToggleVisibilityEventAction toggleVisibility,
 															boolean parentVisible,
 															boolean parentEnabled);
 
@@ -473,7 +1315,7 @@ public abstract class ViewVisitor extends ActionVisitor {
 	 * @return	if the widget is visible or not
 	 */
 	@SuppressWarnings("static-method")
-	protected boolean visible(Invisible invisible) {
+	protected boolean visible(@Nonnull Invisible invisible) {
 		return true;
 	}
 	
@@ -483,12 +1325,19 @@ public abstract class ViewVisitor extends ActionVisitor {
 	 * @return	if the widget is enabled or not
 	 */
 	@SuppressWarnings("static-method")
-	protected boolean enabled(Disableable disableable) {
+	protected boolean enabled(@Nonnull Disableable disableable) {
 		return true;
 	}
 
+	/**
+	 * Visits the widget in the current traversal context.
+	 *
+	 * @param widget the widget metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
 	@SuppressWarnings({"java:S3776", "java:S6541"}) // complexity OK
-	private void visitWidget(MetaData widget, 
+	private void visitWidget(@Nonnull MetaData widget,
 								boolean parentVisible,
 								boolean parentEnabled) {
 		// containers
@@ -742,7 +1591,14 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 
-	public void visitComponent(Component component,
+	/**
+	 * Visits the component in the current traversal context.
+	 *
+	 * @param component the component metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public void visitComponent(@Nonnull Component component,
 								boolean parentVisible,
 								boolean parentEnabled) {
 		for (MetaData widget : component.getFragment(customer, currentUxUi).getContained()) {
@@ -750,7 +1606,14 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 
-	public void visitDefaultWidget(DefaultWidget widget, boolean parentVisible, boolean parentEnabled) {
+	/**
+	 * Visits the default widget in the current traversal context.
+	 *
+	 * @param widget the widget metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public void visitDefaultWidget(@Nonnull DefaultWidget widget, boolean parentVisible, boolean parentEnabled) {
 		String binding = widget.getBinding();
 
 		// determine the widget to use
@@ -770,8 +1633,15 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 	
+	/**
+	 * Visits the container in the current traversal context.
+	 *
+	 * @param container the container metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
 	@SuppressWarnings("java:S3776") // Complexity OK
-	private void visitContainer(Container container, 
+	private void visitContainer(@Nonnull Container container,
 									boolean parentVisible,
 									boolean parentEnabled) {
 		if (container == view) {
@@ -821,9 +1691,19 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 	
+	/**
+	 * Visits the data widget columns in the current traversal context.
+	 *
+	 * @param widget the widget metadata; must not be null
+	 * @param widgetBindingPrefix the compound-binding prefix for child columns; must not be null
+	 * @param widgetVisible whether the data widget is visible
+	 * @param widgetEnabled whether the data widget is enabled
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
 	@SuppressWarnings("java:S3776") // Complexity OK
-	private void visitDataWidgetColumns(AbstractDataWidget widget,
-											String widgetBindingPrefix,
+	private void visitDataWidgetColumns(@Nonnull AbstractDataWidget widget,
+											@Nonnull String widgetBindingPrefix,
 											boolean widgetVisible,
 											boolean widgetEnabled,
 											boolean parentVisible,
@@ -859,7 +1739,7 @@ public abstract class ViewVisitor extends ActionVisitor {
 					else if (useMetaData) {
 						TargetMetaData target = BindUtil.getMetaDataForBinding(customer, 
 																				module, 
-																				document, 
+																				document,
 																				fullyQualifiedColumnBinding);
 						Attribute attribute = target.getAttribute();
 						if (attribute != null) {
@@ -899,7 +1779,14 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 	
-	protected void visitChangeable(Changeable changeable,
+	/**
+	 * Visits the changeable in the current traversal context.
+	 *
+	 * @param changeable the changeable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	protected void visitChangeable(@Nonnull Changeable changeable,
 									boolean parentVisible,
 									boolean parentEnabled) {
 		List<EventAction> actions = changeable.getChangedActions();
@@ -910,7 +1797,14 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 
-	protected void visitFocusable(Focusable focusable,
+	/**
+	 * Visits the focusable in the current traversal context.
+	 *
+	 * @param focusable the focusable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	protected void visitFocusable(@Nonnull Focusable focusable,
 									boolean parentVisible,
 									boolean parentEnabled) {
 		List<EventAction> actions = focusable.getFocusActions();
@@ -927,7 +1821,14 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 	
-	private void visitLookupActions(LookupDescription lookup,
+	/**
+	 * Visits the lookup actions in the current traversal context.
+	 *
+	 * @param lookup the lookup metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	private void visitLookupActions(@Nonnull LookupDescription lookup,
 										boolean parentVisible,
 										boolean parentEnabled) {
 		visitAddableActions(lookup, parentVisible, parentEnabled);
@@ -947,7 +1848,14 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 
-	private void visitAddableActions(Addable addable,
+	/**
+	 * Visits the addable actions in the current traversal context.
+	 *
+	 * @param addable the addable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	private void visitAddableActions(@Nonnull Addable addable,
 										boolean parentVisible,
 										boolean parentEnabled) {
 		List<EventAction> actions = addable.getAddedActions();
@@ -958,7 +1866,14 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 
-	private void visitEditableActions(Editable editable,
+	/**
+	 * Visits the editable actions in the current traversal context.
+	 *
+	 * @param editable the editable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	private void visitEditableActions(@Nonnull Editable editable,
 										boolean parentVisible,
 										boolean parentEnabled) {
 		List<EventAction> actions = editable.getEditedActions();
@@ -969,7 +1884,14 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 
-	private void visitRemovableActions(Removable removable,
+	/**
+	 * Visits the removable actions in the current traversal context.
+	 *
+	 * @param removable the removable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	private void visitRemovableActions(@Nonnull Removable removable,
 										boolean parentVisible,
 										boolean parentEnabled) {
 		List<EventAction> actions = removable.getRemovedActions();
@@ -980,7 +1902,14 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 
-	private void visitSelectableActions(Selectable selectable,
+	/**
+	 * Visits the selectable actions in the current traversal context.
+	 *
+	 * @param selectable the selectable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	private void visitSelectableActions(@Nonnull Selectable selectable,
 											boolean parentVisible,
 											boolean parentEnabled) {
 		List<EventAction> actions = selectable.getSelectedActions();
@@ -991,8 +1920,16 @@ public abstract class ViewVisitor extends ActionVisitor {
 		}
 	}
 
-	private void visitActions(EventSource source, 
-								List<EventAction> actions, 
+	/**
+	 * Visits the actions in the current traversal context.
+	 *
+	 * @param source the metadata source that owns the event action; must not be null
+	 * @param actions the ordered event actions, or null when none are declared
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	private void visitActions(@Nonnull EventSource source,
+								@Nullable List<EventAction> actions,
 								boolean parentVisible, 
 								boolean parentEnabled) {
 		if (actions != null) {

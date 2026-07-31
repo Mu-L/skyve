@@ -44,6 +44,19 @@ class ThemeRoutingStructureTest {
 	}
 
 	@Test
+	void ecuadorTitleIsCentredWithinTheTopbar() throws Exception {
+		String ecuador = Files.readString(Path.of("src/main/webapp/WEB-INF/resources/skyve/css/ecuador.css"));
+		String titleRule = cssRule(ecuador, "#topbar-appname .app-name");
+
+		assertTrue(titleRule.contains("align-items: center;"), titleRule);
+		assertTrue(titleRule.contains("height: var(--skyve-topbar-height);"), titleRule);
+		assertTrue(titleRule.contains("justify-content: center;"), titleRule);
+		assertTrue(titleRule.contains("left: 84px;"), titleRule);
+		assertTrue(titleRule.contains("right: 84px;"), titleRule);
+		assertTrue(titleRule.contains("top: 0;"), titleRule);
+	}
+
+	@Test
 	void homeDoesNotConsumeTheDevicePreviewCommand() throws Exception {
 		String home = Files.readString(Path.of("src/main/webapp/home.jsp"));
 		assertFalse(home.contains("consumeDevicePreviewCommand"));
@@ -56,5 +69,13 @@ class ThemeRoutingStructureTest {
 		assertTrue(source.contains("url=\"?a=e&amp;m=admin&amp;d=UserDashboard\""));
 		assertTrue(source.contains("url=\"?a=e&amp;m=admin&amp;d=UserAccount\""));
 		assertFalse(source.contains("getEmulationAwareUrl"));
+	}
+
+	private static String cssRule(String source, String selector) {
+		int start = source.indexOf(selector + " {");
+		assertTrue(start >= 0, source);
+		int end = source.indexOf('}', start);
+		assertTrue(end >= 0, source);
+		return source.substring(start, end);
 	}
 }

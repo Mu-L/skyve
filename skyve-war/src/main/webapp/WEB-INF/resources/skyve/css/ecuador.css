@@ -27,19 +27,22 @@
 	top: 12px;
 }
 #topbar-appname .app-name {
+	align-items: center;
 	color: #fff;
-	display: block;
+	display: flex;
 	font-size: 14px;
 	font-weight: 500;
-	left: 60px;
+	height: var(--skyve-topbar-height);
+	justify-content: center;
+	left: 84px;
 	line-height: 1.35;
-	max-height: 54px;
+	max-height: var(--skyve-topbar-height);
 	overflow: hidden;
 	overflow-wrap: break-word;
 	position: absolute;
 	right: 84px;
 	text-align: center;
-	top: 12px;
+	top: 0;
 	vertical-align: middle;
 	white-space: normal;
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE project>
-<project name="Compress" default="compressJavascript" basedir=".">
+<project name="Compress" default="compress" basedir=".">
 	<property name="closure.compiler.version" value="v20240317"/>
 	<property name="closure.compiler.jar" value="lib/closure-compiler-${closure.compiler.version}.jar"/>
 	<property name="closure.compiler.sha256" value="6b1250ac21c05bdd209dc515d9b6037b30b5555a284dd741ff0591a82848b7ce"/>
@@ -21,7 +21,7 @@
 		</fail>
 	</target>
 
-	<target name="compressJavascript" depends="prepareCompressionTools">
+	<target name="compress" depends="prepareCompressionTools">
 		<mkdir dir="src/main/resources/META-INF/resources/skyve/editorial/assets/css"/>
 		<mkdir dir="src/main/resources/META-INF/resources/skyve/editorial/assets/js"/>
 

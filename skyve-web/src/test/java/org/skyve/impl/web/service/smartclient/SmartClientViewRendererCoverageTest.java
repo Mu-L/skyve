@@ -11,6 +11,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.skyve.impl.generate.ViewRenderer;
+import org.skyve.impl.metadata.MetadataIconResolver.ResolvedIcon;
 import org.skyve.impl.metadata.controller.CustomisationsStaticSingleton;
 import org.skyve.impl.metadata.customer.CustomerImpl;
 import org.skyve.impl.metadata.model.document.CollectionImpl;
@@ -64,7 +65,6 @@ import org.skyve.impl.metadata.view.widget.bound.input.Slider;
 import org.skyve.impl.metadata.view.widget.bound.input.Spinner;
 import org.skyve.impl.metadata.view.widget.bound.input.TextArea;
 import org.skyve.impl.metadata.view.widget.bound.input.TextField;
-import org.skyve.impl.metadata.view.widget.bound.tabular.ListGrid;
 import org.skyve.impl.metadata.view.widget.bound.ParameterImpl;
 import org.skyve.metadata.controller.ImplicitActionName;
 import org.skyve.metadata.controller.Customisations;
@@ -73,6 +73,8 @@ import org.skyve.metadata.user.User;
 import org.skyve.util.OWASP;
 
 class SmartClientViewRendererCoverageTest {
+	private static final ResolvedIcon NO_ICON = new ResolvedIcon(null, null);
+
 	private static final String UNSAFE_TITLE = "<img src=x onerror=alert(1)> & \"quoted\" 'single'";
 
 	private CustomerImpl customer;
@@ -110,22 +112,12 @@ class SmartClientViewRendererCoverageTest {
 	}
 
 	@Test
-	void renderListGridWithoutDocumentContextThrows() {
-		when(view.getName()).thenReturn("edit");
-
-		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, null, view, "desktop", false);
-		ListGrid grid = new ListGrid();
-
-		assertThrows(MetaDataException.class, () -> renderer.renderListGrid("Contacts", false, grid));
-	}
-
-	@Test
 	void renderEditViewWithoutSidebarCreatesEditContainer() {
 		when(view.getName()).thenReturn("edit");
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		assertTrue(renderer.getCode().toString().contains("var edit=isc.BizContainer.create({"));
 	}
@@ -136,7 +128,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		assertTrue(renderer.getCode().toString().contains("var create=isc.BizContainer.create({"));
 	}
@@ -147,7 +139,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(new Sidebar());
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		assertTrue(renderer.getCode().toString().contains("var sidebarPane=isc.BizContainer.create({"));
 		assertTrue(renderer.getCode().toString().contains("var viewPane=isc.BizContainer.create({"));
@@ -159,8 +151,8 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(new Sidebar());
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", true);
-		renderer.renderView(null, null);
-		renderer.renderedView(null, null);
+		renderer.renderView(NO_ICON);
+		renderer.renderedView(NO_ICON);
 
 		assertTrue(renderer.getCode().toString().contains("view.addContained(edit);"));
 	}
@@ -171,8 +163,8 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", true);
-		renderer.renderView(null, null);
-		renderer.renderedView(null, null);
+		renderer.renderView(NO_ICON);
+		renderer.renderedView(NO_ICON);
 
 		String code = renderer.getCode().toString();
 		assertTrue(code.contains("var v0=isc.DynamicForm.create({invisibleConditionName:'true'});"));
@@ -186,7 +178,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		VBox vbox = new VBox();
 		vbox.setBorder(Boolean.TRUE);
@@ -242,7 +234,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		HBox hbox = new HBox();
 		hbox.setCollapsible(Collapsible.closed);
@@ -284,7 +276,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		TabPane tabPane = new TabPane();
 		tabPane.setSelectedTabIndexBinding("bean.currentTab");
@@ -357,7 +349,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		TabPane tabPane = new TabPane();
 		renderer.renderTabPane(tabPane);
@@ -378,7 +370,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		TabPane tabPane = new TabPane();
 		renderer.renderTabPane(tabPane);
@@ -400,7 +392,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		TabPane tabPane = new TabPane();
 		renderer.renderTabPane(tabPane);
@@ -426,7 +418,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		TabPane tabPane = new TabPane();
 		tabPane.setDisabledConditionName("bean.tabPaneDisabled");
@@ -445,7 +437,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		Form form = new Form();
 		form.setLabelDefaultHorizontalAlignment(HorizontalAlignment.right);
@@ -501,7 +493,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		MapDisplay map = new MapDisplay();
 		map.setModelName("locations");
@@ -529,7 +521,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		Spacer spacer = new Spacer();
 		spacer.setPixelWidth(Integer.valueOf(12));
@@ -558,7 +550,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		Label label = new Label();
 		label.setBinding("contact.name");
@@ -985,7 +977,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getName()).thenReturn("edit");
 		when(view.getSidebar()).thenReturn(null);
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		ActionImpl custom = action("customAction");
 		custom.setClientValidation(Boolean.FALSE);
@@ -1026,7 +1018,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 		doReturn(Boolean.TRUE).when(user).canExecuteAction(document, "unsafeAction");
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		ActionImpl action = action("unsafeAction");
 		action.setDisplayName(UNSAFE_TITLE);
@@ -1041,7 +1033,7 @@ class SmartClientViewRendererCoverageTest {
 		assertTrue(code.contains("confirm:'" + escaped + "'"), code);
 
 		SmartClientViewRenderer trustedRenderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		trustedRenderer.renderView(null, null);
+		trustedRenderer.renderView(NO_ICON);
 		action.setEscapeDisplayName(Boolean.FALSE);
 		action.setEscapeToolTip(Boolean.FALSE);
 		action.setEscapeConfirm(Boolean.FALSE);
@@ -1059,7 +1051,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getName()).thenReturn("edit");
 		when(view.getSidebar()).thenReturn(null);
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		ActionImpl upload = action("UploadBackup");
 		upload.setImplicitName(ImplicitActionName.Upload);
@@ -1078,7 +1070,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getName()).thenReturn("edit");
 		when(view.getSidebar()).thenReturn(null);
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 
 		TextField text = new TextField();
 		renderer.visitOnChangedEventHandler(text, true, true);
@@ -1132,7 +1124,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 		Form form = new Form();
 		form.getColumns().add(new FormColumn());
 		renderer.renderForm("Details", form);
@@ -1146,7 +1138,7 @@ class SmartClientViewRendererCoverageTest {
 		when(view.getSidebar()).thenReturn(null);
 
 		SmartClientViewRenderer renderer = new SmartClientViewRenderer(user, module, document, view, "desktop", false);
-		renderer.renderView(null, null);
+		renderer.renderView(NO_ICON);
 		return renderer;
 	}
 

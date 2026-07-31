@@ -16,6 +16,8 @@ import org.skyve.domain.messages.SessionEndedException;
 import org.skyve.domain.types.converters.Format.TextCase;
 import org.skyve.impl.generate.ViewRenderer;
 import org.skyve.impl.metadata.Container;
+import org.skyve.impl.metadata.MetadataIconResolver;
+import org.skyve.impl.metadata.MetadataIconResolver.ResolvedIcon;
 import org.skyve.impl.metadata.model.document.field.ConvertibleField;
 import org.skyve.impl.metadata.model.document.field.Date;
 import org.skyve.impl.metadata.model.document.field.DateTime;
@@ -546,16 +548,8 @@ public class MetaDataServlet extends HttpServlet {
 				dataSourceJson.append("\":{\"module\":\"").append(drivingDocumentModuleName);
 				dataSourceJson.append("\",\"document\":\"").append(drivingDocumentName);
 
-				String icon = drivingDocument.getIconStyleClass();
-				if (icon != null) {
-					dataSourceJson.append("\",\"fontIcon\":\"").append(icon);
-				}
-				else {
-					String icon32 = drivingDocument.getIcon32x32RelativeFileName();
-					if (icon32 != null) {
-						dataSourceJson.append("\",\"icon\":\"").append(icon32);
-					}
-				}
+				ResolvedIcon icon = MetadataIconResolver.resolve(drivingDocument, null);
+				appendDataSourceIcon(dataSourceJson, icon);
 				dataSourceJson.append("\",\"aggregate\":").append(query.isAggregate());
 				dataSourceJson.append(",\"canCreate\":").append(user.canCreateDocument(drivingDocument));
 				dataSourceJson.append(",\"canUpdate\":").append(user.canUpdateDocument(drivingDocument));
@@ -779,7 +773,51 @@ public class MetaDataServlet extends HttpServlet {
         menuJson.setLength(menuJson.length() - 1); // ,
         menuJson.append("]");
         dataSourceJson.setLength(dataSourceJson.length() - 1); // ,
-        dataSourceJson.append("}");
+		dataSourceJson.append("}");
+	}
+
+	/**
+	 * Appends the selected document icon to a metadata data-source JSON fragment.
+	 *
+	 * @param target target JSON fragment
+	 * @param icon resolved driving-document icon
+	 */
+	static void appendDataSourceIcon(@Nonnull StringBuilder target, @Nonnull ResolvedIcon icon) {
+		String iconStyleClass = icon.iconStyleClass();
+		if (iconStyleClass != null) {
+			target.append("\",\"fontIcon\":\"").append(OWASP.escapeJsonString(iconStyleClass));
+		}
+		else {
+			String iconFileName = icon.iconFileName();
+			if (iconFileName != null) {
+				target.append("\",\"icon\":\"").append(OWASP.escapeJsonString(iconFileName));
+			}
+		}
+	}
+
+	/**
+	 * Appends the selected root-view icon properties to a metadata JSON object.
+	 *
+	 * @param target target JSON object
+	 * @param icon resolved view/document icon
+	 * @param document document owning an optional image resource
+	 */
+	static void appendViewIcon(@Nonnull StringBuilder target,
+								@Nonnull ResolvedIcon icon,
+								@Nonnull Document document) {
+		String iconStyleClass = icon.iconStyleClass();
+		if (iconStyleClass != null) {
+			target.append(",\"iconStyleClass\":\"").append(OWASP.escapeJsonString(iconStyleClass)).append('"');
+		}
+		else {
+			String iconFileName = icon.iconFileName();
+			if (iconFileName != null) {
+				String iconUrl = new StringBuilder(96).append("resources?_doc=")
+						.append(document.getOwningModuleName()).append('.').append(document.getName())
+						.append("&_n=").append(iconFileName).toString();
+				target.append(",\"icon32x32Url\":\"").append(OWASP.escapeJsonString(iconUrl)).append('"');
+			}
+		}
 	}
 	
 	@SuppressWarnings("java:S3776") // Complexity OK
@@ -798,21 +836,12 @@ public class MetaDataServlet extends HttpServlet {
 		ViewRenderer vr = new ViewRenderer(user, module, document, editView, uxui) {
 			/** {@inheritDoc} */
 			@Override
-			public void renderView(String icon16x16Url, String icon32x32Url) {
+			public void renderView(@Nonnull ResolvedIcon resolvedIcon) {
 				result.append("{\"type\":\"view\",\"name\":\"");
 				result.append(view.getName()).append("\",\"title\":\"").append(jsonViewTitle(view)).append('"');
 				result.append(",\"escapeTitle\":").append(ViewRenderer.shouldEscape(view.getEscapeTitle()));
-				String value = view.getIconStyleClass();
-				if (value != null) {
-					result.append(",\"iconStyleClass\":\"").append(value).append('"');
-				}
-				if (icon16x16Url != null) {
-					result.append(",\"icon16x16Url\":\"").append(OWASP.escapeJsonString(icon32x32Url)).append('"');
-				}
-				if (icon32x32Url != null) {
-					result.append(",\"icon32x32Url\":\"").append(OWASP.escapeJsonString(icon32x32Url)).append('"');
-				}
-				value = view.getHelpRelativeFileName();
+				appendViewIcon(result, resolvedIcon, document);
+				String value = view.getHelpRelativeFileName();
 				if (value != null) {
 					result.append(",\"helpRelativeFileName\":\"").append(value).append('"');
 				}
@@ -850,7 +879,7 @@ public class MetaDataServlet extends HttpServlet {
 
 			/** {@inheritDoc} */
 			@Override
-			public void renderedView(String icon16x16Url, String icon32x32Url) {
+			public void renderedView(@Nonnull ResolvedIcon resolvedIcon) {
 				if (view.getSidebar() == null) {
 					processedContainer(view);
 				}
@@ -864,7 +893,7 @@ public class MetaDataServlet extends HttpServlet {
 
 				result.append('}');
 			}
-			
+
 			/** {@inheritDoc} */
 			@Override
 			public void renderVBox(String borderTitle, VBox vbox) {

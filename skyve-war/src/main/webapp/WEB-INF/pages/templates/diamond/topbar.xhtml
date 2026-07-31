@@ -14,7 +14,9 @@
             <span class="topbar-separator"></span>
             <span class="viewname app-name">
             	<p:outputPanel id="title" layout="inline">
-            		#{title}
+                    <ui:include src="/WEB-INF/pages/includes/title.xhtml">
+                        <ui:param name="bean" value="#{bean}" />
+                    </ui:include>
             		<p:autoUpdate />
            		</p:outputPanel>
        		</span>

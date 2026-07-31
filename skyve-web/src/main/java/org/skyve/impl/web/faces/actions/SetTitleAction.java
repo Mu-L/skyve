@@ -64,6 +64,7 @@ public class SetTitleAction extends FacesAction<Void> {
 													ViewType.edit.toString() : 
 													ViewType.create.toString());
 			facesView.setTitle(Binder.formatMessage(view.getLocalisedTitle(), targetBean));
+			facesView.setTitleIcon(targetDocument, view);
 	    }
 		else {
         	LOGGER.warn("SetTitleAction: FacesView.getBean() yields null");

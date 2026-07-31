@@ -10,6 +10,7 @@ import org.skyve.domain.types.converters.Format;
 import org.skyve.impl.bind.BindUtil;
 import org.skyve.impl.generate.ViewRenderer;
 import org.skyve.impl.metadata.Container;
+import org.skyve.impl.metadata.MetadataIconResolver.ResolvedIcon;
 import org.skyve.impl.metadata.model.document.field.ConvertibleField;
 import org.skyve.impl.metadata.model.document.field.LengthField;
 import org.skyve.impl.metadata.model.document.field.Text;
@@ -169,9 +170,11 @@ public class ClientViewRenderer extends ViewRenderer {
 
 	/**
 	 * Executes this renderer lifecycle override for the current view context.
+	 *
+	 * @param resolvedIcon resolved root-view icon metadata
 	 */
 	@Override
-	public void renderView(String icon16x16Url, String icon32x32Url) {
+	public void renderView(@Nonnull ResolvedIcon resolvedIcon) {
 		// Ensure visibility is set for both create and edit views
 		current = cr.view(null, createView ? "created" : "notCreated");
 		result = current;
@@ -189,9 +192,11 @@ public class ClientViewRenderer extends ViewRenderer {
 
 	/**
 	 * Executes this renderer lifecycle override for the current view context.
+	 *
+	 * @param resolvedIcon resolved root-view icon metadata
 	 */
 	@Override
-	public void renderedView(String icon16x16Url, String icon32x32Url) {
+	public void renderedView(@Nonnull ResolvedIcon resolvedIcon) {
 		// Add the toolbar(s) if it/they has/have contents
     	if ((toolbarLayouts != null) && (! toolbarLayouts.isEmpty()) && (! toolbarLayouts.get(0).isLeaf())) {
 			// If we get any toolbars back, add the toolbar layouts to it

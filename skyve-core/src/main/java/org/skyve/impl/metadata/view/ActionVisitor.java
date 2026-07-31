@@ -9,12 +9,19 @@ import org.skyve.metadata.view.View.ViewType;
 import org.skyve.metadata.view.widget.FilterParameter;
 import org.skyve.metadata.view.widget.bound.Parameter;
 
+import jakarta.annotation.Nonnull;
+
 /**
  * Abstract visitor that traverses the action list of a {@link ViewImpl}.
  *
- * <p>Subclasses override {@link #visit(String, ActionImpl)} to process each
- * action.  {@link ViewVisitor} extends this class to combine action and widget
- * traversal.
+ * <p>Dispatch preserves view declaration order. Custom actions are sent to
+ * {@link #visitCustomAction(ActionImpl)}; implicit actions are sent to their
+ * type-specific callbacks. The {@link ImplicitActionName#DEFAULTS} placeholder
+ * expands to the implicit actions supported by the declaring list or edit view.
+ * Parameters are visited after their owning action.
+ *
+ * <p>Subclasses implement callbacks to inspect, validate, or render actions.
+ * {@link ViewVisitor} extends this class to combine action and widget traversal.
  *
  * <p>Threading: not thread-safe; one instance per traversal.
  *
@@ -22,7 +29,19 @@ import org.skyve.metadata.view.widget.bound.Parameter;
  * @see NoOpViewVisitor
  */
 public abstract class ActionVisitor {
-	public final void visitActions(ViewImpl view) {
+	/**
+	 * Creates an action visitor for use by a concrete traversal implementation.
+	 */
+	protected ActionVisitor() {
+		// Subclasses supply all traversal context.
+	}
+
+	/**
+	 * Visits each action declared by the view in declaration order and then visits its parameters.
+	 *
+	 * @param view the view metadata to traverse; must not be null
+	 */
+	public final void visitActions(@Nonnull ViewImpl view) {
 		String name = view.getName();
 		for (org.skyve.metadata.view.Action action : view.getActions()) {
 			visit(name, (ActionImpl) action);
@@ -30,7 +49,14 @@ public abstract class ActionVisitor {
 		}
 	}
 
-	protected void visitParameterizable(Parameterizable parameterizable,
+	/**
+	 * Visits the parameters exposed by parameterisable metadata in declaration order.
+	 *
+	 * @param parameteriable the parameterisable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	protected void visitParameterizable(@Nonnull Parameterizable parameterizable,
 											boolean parentVisible,
 											boolean parentEnabled) {
 		List<Parameter> parameters = parameterizable.getParameters();
@@ -41,7 +67,14 @@ public abstract class ActionVisitor {
 		}
 	}
 
-	protected void visitFilterable(Filterable filterable,
+	/**
+	 * Visits filter and ordinary parameters exposed by filterable metadata in declaration order.
+	 *
+	 * @param filterable the filterable metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	protected void visitFilterable(@Nonnull Filterable filterable,
 									boolean parentVisible,
 									boolean parentEnabled) {
 		List<FilterParameter> filterParameters = filterable.getFilterParameters();
@@ -58,33 +91,158 @@ public abstract class ActionVisitor {
 		}
 	}
 
-	public abstract void visitCustomAction(ActionImpl action);
-	public abstract void visitAddAction(ActionImpl action);
-	public abstract void visitRemoveAction(ActionImpl action);
-	public abstract void visitZoomOutAction(ActionImpl action);
-	public abstract void visitNavigateAction(ActionImpl action);
-	public abstract void visitOKAction(ActionImpl action);
-	public abstract void visitSaveAction(ActionImpl action);
-	public abstract void visitCancelAction(ActionImpl action);
-	public abstract void visitDeleteAction(ActionImpl action);
-	public abstract void visitReportAction(ActionImpl action);
-	public abstract void visitBizExportAction(ActionImpl action);
-	public abstract void visitBizImportAction(ActionImpl action);
-	public abstract void visitDownloadAction(ActionImpl action);
-	public abstract void visitUploadAction(ActionImpl action);
-	public abstract void visitNewAction(ActionImpl action);
-	public abstract void visitEditAction(ActionImpl action);
-	public void visitPrintAction(@SuppressWarnings("unused") ActionImpl action) {
+	/**
+	 * Visits an explicitly named custom action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitCustomAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the add implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitAddAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the remove implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitRemoveAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the zoom out implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitZoomOutAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the navigate implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitNavigateAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the OK implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitOKAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the save implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitSaveAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the cancel implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitCancelAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the delete implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitDeleteAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the report implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitReportAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the business-export implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitBizExportAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the business-import implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitBizImportAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the download implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitDownloadAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the upload implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitUploadAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the new implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitNewAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the edit implicit action.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public abstract void visitEditAction(@Nonnull ActionImpl action);
+
+	/**
+	 * Visits the print implicit action.
+	 *
+	 * <p>The base implementation is intentionally empty for backward compatibility;
+	 * subclasses override it when their output target supports printing.
+	 *
+	 * @param action the action metadata; must not be null
+	 */
+	public void visitPrintAction(@Nonnull ActionImpl action) {
 		// nothing to see here
 	}
-	public abstract void visitParameter(Parameter parameter,
+	/**
+	 * Visits one ordinary action or widget parameter.
+	 *
+	 * @param parameter the parameter metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitParameter(@Nonnull Parameter parameter,
 											boolean parentVisible,
 											boolean parentEnabled);
-	public abstract void visitFilterParameter(FilterParameter parameter,
+
+	/**
+	 * Visits one filter parameter.
+	 *
+	 * @param parameter the parameter metadata; must not be null
+	 * @param parentVisible whether all ancestor metadata is visible
+	 * @param parentEnabled whether all ancestor metadata is enabled
+	 */
+	public abstract void visitFilterParameter(@Nonnull FilterParameter parameter,
 												boolean parentVisible,
 												boolean parentEnabled);
 
-	private void visit(String viewName, ActionImpl action) {
+	/**
+	 * Resolves and dispatches one declared action to the appropriate callback.
+	 *
+	 * @param viewName the name of the view declaring the action; must not be null
+	 * @param action the action metadata; must not be null
+	 */
+	private void visit(@Nonnull String viewName, @Nonnull ActionImpl action) {
 		ImplicitActionName implicitName = action.getImplicitName();
 		if (implicitName != null) {
 			visit(viewName, implicitName, action);
@@ -94,8 +252,15 @@ public abstract class ActionVisitor {
 		}
 	}
 
+	/**
+	 * Dispatches one resolved implicit action to its type-specific callback.
+	 *
+	 * @param viewName the name of the view declaring the action; must not be null
+	 * @param implicitName the resolved implicit action name; must not be null
+	 * @param action the action metadata; must not be null
+	 */
 	@SuppressWarnings("java:S3776") // Complexity OK
-	private void visit(String viewName, ImplicitActionName implicitName, ActionImpl action) {
+	private void visit(@Nonnull String viewName, @Nonnull ImplicitActionName implicitName, @Nonnull ActionImpl action) {
 		if (ImplicitActionName.DEFAULTS.equals(implicitName)) {
 			if (ViewType.list.toString().equals(viewName)) {
 				visit(viewName, ImplicitActionName.New, action);
