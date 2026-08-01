@@ -2,9 +2,9 @@ package org.skyve.metadata.view.fluent;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import org.junit.jupiter.api.Test;
 import org.skyve.impl.metadata.view.LoadingType;
@@ -192,10 +192,10 @@ class FluentViewAdditionalWidgetsTest {
 		textSource.getBlurActions().add(new RerenderEventAction());
 		FluentTextArea text = new FluentTextArea().from(textSource);
 		text.wordWrap(false).editable(false).binding("updatedNotes").disabledConditionName("disableUpdated").invisibleConditionName("hideUpdated");
-		assertThat(text.minPixelHeight(110), is(nullValue()));
-		assertThat(text.keyboardType(KeyboardType.decimal), is(nullValue()));
-		assertThat(text.pixelWidth(420), is(nullValue()));
-		assertThat(text.pixelHeight(260), is(nullValue()));
+		assertSame(text, text.minPixelHeight(110));
+		assertSame(text, text.keyboardType(KeyboardType.decimal));
+		assertSame(text, text.pixelWidth(420));
+		assertSame(text, text.pixelHeight(260));
 		assertThat(text.get().getWordWrap(), is(Boolean.FALSE));
 		assertThat(text.get().getEditable(), is(Boolean.FALSE));
 		assertEquals(1, text.get().getChangedActions().size());

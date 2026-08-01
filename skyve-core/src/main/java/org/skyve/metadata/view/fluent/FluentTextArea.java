@@ -90,7 +90,7 @@ public class FluentTextArea extends FluentChangeableInputWidget<FluentTextArea> 
 	 */
 	public FluentTextArea minPixelHeight(int minPixelHeight) {
 		text.setMinPixelHeight(Integer.valueOf(minPixelHeight));
-		return null;
+		return this;
 	}
 
 	/**
@@ -102,7 +102,7 @@ public class FluentTextArea extends FluentChangeableInputWidget<FluentTextArea> 
 	 */
 	public FluentTextArea keyboardType(KeyboardType keyboardType) {
 		text.setKeyboardType(keyboardType);
-		return null;
+		return this;
 	}
 
 	/**
@@ -115,7 +115,7 @@ public class FluentTextArea extends FluentChangeableInputWidget<FluentTextArea> 
 	@Override
 	public FluentTextArea pixelWidth(int width) {
 		text.setPixelWidth(Integer.valueOf(width));
-		return null;
+		return this;
 	}
 
 	/**
@@ -128,7 +128,7 @@ public class FluentTextArea extends FluentChangeableInputWidget<FluentTextArea> 
 	@Override
 	public FluentTextArea pixelHeight(int height) {
 		text.setPixelHeight(Integer.valueOf(height));
-		return null;
+		return this;
 	}
 
 	/**
