@@ -82,6 +82,8 @@ import jakarta.servlet.SessionCookieConfig;
  * and reads application configuration from JSON.
  */
 public class SkyveContextListener implements ServletContextListener {
+	static final String SHUTTING_DOWN_ATTRIBUTE_NAME = SkyveContextListener.class.getName() + ".shuttingDown";
+
 	private static record AppCacheSettings(String cacheName,
 									 String type,
 									 int heapSizeEntries,
@@ -1298,6 +1300,8 @@ public class SkyveContextListener implements ServletContextListener {
 	 */
 	@Override
 	public void contextDestroyed(ServletContextEvent evt) {
+		evt.getServletContext().setAttribute(SHUTTING_DOWN_ATTRIBUTE_NAME, Boolean.TRUE);
+
 		try {
 			try {
 				try {

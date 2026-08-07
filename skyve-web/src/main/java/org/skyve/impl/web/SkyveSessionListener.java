@@ -10,6 +10,7 @@ import org.skyve.web.WebContext;
 import org.slf4j.Logger;
 import org.skyve.util.logging.SkyveLoggerFactory;
 
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
@@ -43,6 +44,7 @@ public class SkyveSessionListener implements HttpSessionListener {
 	 * @param se the session event for the destroyed session
 	 */
 	@Override
+	@SuppressWarnings("java:S3776") // Complexity OK
 	public void sessionDestroyed(HttpSessionEvent se) {
 		StateUtil.decrementSessionCount();
 		
@@ -52,26 +54,31 @@ public class SkyveSessionListener implements HttpSessionListener {
 			// Remove the session from the session cache
 			StateUtil.removeSession(user.getId(), session);
 			
-			// Notify the customer of the logout
 			try {
-				String customerName = user.getCustomerName();
-				if (customerName != null) {
-					// The user.customer lookup is not a reference, its a lookup of the name through the repository.
-					// If the repository has not been initialised its possible that an error will emanate from the User.getCustomer() call below.
-					// Note the current thread may not have a Persistence instance associated with it.
-					CustomerImpl customer = null;
-					try {
-						customer = (CustomerImpl) user.getCustomer();
+				ServletContext servletContext = session.getServletContext();
+				boolean shuttingDown = (servletContext != null) &&
+										Boolean.TRUE.equals(servletContext.getAttribute(SkyveContextListener.SHUTTING_DOWN_ATTRIBUTE_NAME));
+				if (! shuttingDown) {
+					// Notify the customer of the logout
+					String customerName = user.getCustomerName();
+					if (customerName != null) {
+						// The user.customer lookup is not a reference, its a lookup of the name through the repository.
+						// If the repository has not been initialised its possible that an error will emanate from the User.getCustomer() call below.
+						// Note the current thread may not have a Persistence instance associated with it.
+						CustomerImpl customer = null;
+						try {
+							customer = (CustomerImpl) user.getCustomer();
+						}
+						catch (Exception e) {
+							LOGGER.warn("Could not get the user customer {} from the repository to call notifyLogout() on session destroyed.", customerName, e);
+						}
+						if (customer != null) {
+							customer.notifyLogout(user, session);
+						}
 					}
-					catch (Exception e) {
-						LOGGER.warn("Could not get the user customer {} from the repository to call notifyLogout() on session destroyed.", customerName, e);
+					else {
+						LOGGER.warn("Could not get the user customer as it is null so cannot call notifyLogout() on session destroyed.");
 					}
-					if (customer != null) {
-						customer.notifyLogout(user, session);
-					}
-				}
-				else {
-					LOGGER.warn("Could not get the user customer as it is null so cannot call notifyLogout() on session destroyed.");
 				}
 			}
 			// Remove the session repository if it exists
