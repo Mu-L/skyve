@@ -3,30 +3,86 @@ package org.skyve.impl.job;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.skyve.CORE;
 import org.skyve.EXT;
 import org.skyve.content.ContentManager;
+import org.skyve.impl.metadata.customer.CustomerImpl;
+import org.skyve.impl.metadata.user.SuperUser;
+import org.skyve.impl.persistence.AbstractPersistence;
+import org.skyve.impl.util.UtilImpl;
+import org.skyve.metadata.repository.ProvidedRepository;
 import org.skyve.util.logging.SkyveLoggerFactory;
 import org.slf4j.Logger;
 
 /**
- * This job fires up the content management system - this can take a while 
- * and we don't want to block the app server deployment process.
- * 
+ * Starts the content management system asynchronously, creates the configured bootstrap user, and invokes customer
+ * data-startup observers in the same persistence context.
+ *
+ * <p>Content startup can take a while, so this work does not block the app server deployment process.
+ *
  * @author mike
  */
 public class ContentStartupJob implements Job {
     private static final Logger LOGGER = SkyveLoggerFactory.getLogger(ContentStartupJob.class);
 
 	@Override
+	@SuppressWarnings("java:S1141") // nested try/catch OK here - its simple
 	public void execute(JobExecutionContext context)
 	throws JobExecutionException {
-		LOGGER.info("Startup the content manager");
+		LOGGER.info("Starting the content manager");
 		try (ContentManager cm = EXT.newContentManager()) {
-			cm.startup();
+			try {
+				cm.startup();
+			}
+			catch (Exception e) {
+				LOGGER.error("Could not start the content manager; bootstrap and data startup will not be attempted", e);
+				return;
+			}
 			LOGGER.info("Completed startup of the content manager");
+
+			try {
+				bootstrapAndNotifyDataStartup();
+			}
+			catch (Exception e) {
+				LOGGER.error("Could not complete bootstrap and data startup after content manager startup", e);
+			}
 		}
 		catch (Exception e) {
-			LOGGER.info("Could not startup the content manager - this is non-fatal but requires investigation", e);
+			LOGGER.error("Could not close the content manager after startup", e);
+		}
+	}
+
+	private static void bootstrapAndNotifyDataStartup() {
+		AbstractPersistence persistence = null;
+		try {
+			persistence = (AbstractPersistence) CORE.getPersistence();
+			persistence.begin();
+
+			SuperUser user = new SuperUser();
+			user.setCustomerName(UtilImpl.BOOTSTRAP_CUSTOMER);
+			user.setContactName(UtilImpl.BOOTSTRAP_USER);
+			user.setName(UtilImpl.BOOTSTRAP_USER);
+			user.setPasswordHash(EXT.hashPassword(UtilImpl.BOOTSTRAP_PASSWORD));
+			persistence.setUser(user);
+
+			if ((UtilImpl.ENVIRONMENT_IDENTIFIER != null) && (UtilImpl.BOOTSTRAP_CUSTOMER != null)) {
+				EXT.bootstrap(persistence);
+				persistence.commit(false);
+				persistence.begin();
+			}
+
+			ProvidedRepository.notifyAllCustomersObservers(c -> ((CustomerImpl) c).notifyDataStartup());
+		}
+		catch (Exception e) {
+			if (persistence != null) {
+				persistence.rollback();
+			}
+			throw new IllegalStateException("Cannot bootstrap.", e);
+		}
+		finally {
+			if (persistence != null) {
+				persistence.commit(true);
+			}
 		}
 	}
 }

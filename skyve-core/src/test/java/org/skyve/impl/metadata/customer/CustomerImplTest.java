@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.skyve.domain.types.converters.date.DD_MMM_YYYY;
 import org.skyve.domain.types.converters.datetime.DD_MM_YYYY_HH24_MI;
@@ -33,12 +34,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings({"static-method", "boxing"})
+@SuppressWarnings({"static-method", "boxing", "null"})
 class CustomerImplTest {
+	private static final String ADMIN_MODULE_NAME = "admin";
+	private static final String ADMIN_SPECIAL_USER_DOCUMENT = "admin.SpecialUser";
+	private static final String ADMIN_USER_DOCUMENT = "admin.User";
 
 	@Test
 	void testSetAndGetName() {
@@ -423,9 +428,15 @@ class CustomerImplTest {
         }
 
         @Test
-        void testNotifyStartupWithNoObserversDoesNotThrow() {
+        void testNotifyServerStartupWithNoObserversDoesNotThrow() {
                 CustomerImpl customer = new CustomerImpl();
-                assertDoesNotThrow(customer::notifyStartup);
+                assertDoesNotThrow(customer::notifyServerStartup);
+        }
+
+        @Test
+        void testNotifyDataStartupWithNoObserversDoesNotThrow() {
+                CustomerImpl customer = new CustomerImpl();
+                assertDoesNotThrow(customer::notifyDataStartup);
         }
 
         @Test
@@ -540,7 +551,7 @@ class CustomerImplTest {
         @Test
         void testSetHomeModuleName() {
                 CustomerImpl customer = new CustomerImpl();
-                assertDoesNotThrow(() -> customer.setHomeModuleName("admin"));
+		assertDoesNotThrow(() -> customer.setHomeModuleName(ADMIN_MODULE_NAME));
         }
 
         // --- interceptor support ---
@@ -641,12 +652,16 @@ class CustomerImplTest {
 	}
 
 	private static CustomerImpl customerWithObserver(Observer impl) {
-		ObserverMetaData omd = mock(ObserverMetaData.class);
-		when(omd.getClassName()).thenReturn("com.example.MockObserver");
-		when(omd.getObserver()).thenReturn(impl);
 		CustomerImpl customer = new CustomerImpl();
-		customer.putObserver(omd);
+		addObserver(customer, "com.example.MockObserver", impl);
 		return customer;
+	}
+
+	private static void addObserver(CustomerImpl customer, String className, Observer impl) {
+		ObserverMetaData omd = mock(ObserverMetaData.class);
+		when(omd.getClassName()).thenReturn(className);
+		when(omd.getObserver()).thenReturn(impl);
+		customer.putObserver(omd);
 	}
 
 	// ---- interceptBeforeNewInstance with interceptor ----
@@ -1198,11 +1213,49 @@ class CustomerImplTest {
 	// ---- observer notify methods with observer ----
 
 	@Test
-	void notifyStartupCallsObserver() {
+	void notifyServerStartupCallsObserver() {
 		Observer observer = mock(Observer.class);
 		CustomerImpl customer = customerWithObserver(observer);
-		customer.notifyStartup();
-		verify(observer).startup(customer);
+		customer.notifyServerStartup();
+		verify(observer).serverStartup(customer);
+	}
+
+	@Test
+	void notifyDataStartupCallsObserver() {
+		Observer observer = mock(Observer.class);
+		CustomerImpl customer = customerWithObserver(observer);
+		customer.notifyDataStartup();
+		verify(observer).dataStartup(customer);
+	}
+
+	@Test
+	void entryCallbacksNotifyObserversInRegistrationOrder() {
+		Observer first = mock(Observer.class);
+		Observer second = mock(Observer.class);
+		CustomerImpl customer = new CustomerImpl();
+		addObserver(customer, "com.example.FirstObserver", first);
+		addObserver(customer, "com.example.SecondObserver", second);
+
+		customer.notifyServerStartup();
+
+		InOrder notificationOrder = inOrder(first, second);
+		notificationOrder.verify(first).serverStartup(customer);
+		notificationOrder.verify(second).serverStartup(customer);
+	}
+
+	@Test
+	void exitCallbacksNotifyObserversInReverseRegistrationOrder() {
+		Observer first = mock(Observer.class);
+		Observer second = mock(Observer.class);
+		CustomerImpl customer = new CustomerImpl();
+		addObserver(customer, "com.example.FirstObserver", first);
+		addObserver(customer, "com.example.SecondObserver", second);
+
+		customer.notifyShutdown();
+
+		InOrder notificationOrder = inOrder(second, first);
+		notificationOrder.verify(second).shutdown(customer);
+		notificationOrder.verify(first).shutdown(customer);
 	}
 
 	@Test
@@ -1271,7 +1324,7 @@ class CustomerImplTest {
 	void getBaseDocumentReturnsNullWhenDerivationsMapIsEmpty() {
 		CustomerImpl customer = new CustomerImpl();
 		Document doc = Mockito.mock(Document.class);
-		Mockito.when(doc.getOwningModuleName()).thenReturn("admin");
+		Mockito.when(doc.getOwningModuleName()).thenReturn(ADMIN_MODULE_NAME);
 		Mockito.when(doc.getName()).thenReturn("User");
 		assertNull(customer.getBaseDocument(doc));
 	}
@@ -1280,7 +1333,7 @@ class CustomerImplTest {
 	void getDerivedDocumentsReturnsEmptyListWhenDerivationsMapIsEmpty() {
 		CustomerImpl customer = new CustomerImpl();
 		Document doc = Mockito.mock(Document.class);
-		Mockito.when(doc.getOwningModuleName()).thenReturn("admin");
+		Mockito.when(doc.getOwningModuleName()).thenReturn(ADMIN_MODULE_NAME);
 		Mockito.when(doc.getName()).thenReturn("User");
 		List<String> result = customer.getDerivedDocuments(doc);
 		assertNotNull(result);
@@ -1292,17 +1345,17 @@ class CustomerImplTest {
 	void getDerivedDocumentsReturnsMatchingEntriesWhenDerivationsPopulated() throws Exception {
 		CustomerImpl customer = new CustomerImpl();
 		java.lang.reflect.Field derivationsField = CustomerImpl.class.getDeclaredField("derivations");
-		derivationsField.setAccessible(true);
+		derivationsField.setAccessible(true); // NOSONAR - the test intentionally inspects private state
 		Map<String, String> derivations = (Map<String, String>) derivationsField.get(customer);
-		derivations.put("admin.SpecialUser", "admin.User");
+		derivations.put(ADMIN_SPECIAL_USER_DOCUMENT, ADMIN_USER_DOCUMENT);
 
 		Document doc = Mockito.mock(Document.class);
-		Mockito.when(doc.getOwningModuleName()).thenReturn("admin");
+		Mockito.when(doc.getOwningModuleName()).thenReturn(ADMIN_MODULE_NAME);
 		Mockito.when(doc.getName()).thenReturn("User");
 
 		List<String> result = customer.getDerivedDocuments(doc);
 		assertEquals(1, result.size());
-		assertEquals("admin.SpecialUser", result.get(0));
+		assertEquals(ADMIN_SPECIAL_USER_DOCUMENT, result.get(0));
 	}
 
 	@Test
@@ -1310,22 +1363,22 @@ class CustomerImplTest {
 	void getBaseDocumentReturnsValueWhenDerivationsContainsKey() throws Exception {
 		CustomerImpl customer = new CustomerImpl();
 		java.lang.reflect.Field derivationsField = CustomerImpl.class.getDeclaredField("derivations");
-		derivationsField.setAccessible(true);
+		derivationsField.setAccessible(true); // NOSONAR - the test intentionally inspects private state
 		Map<String, String> derivations = (Map<String, String>) derivationsField.get(customer);
-		derivations.put("admin.SpecialUser", "admin.User");
+		derivations.put(ADMIN_SPECIAL_USER_DOCUMENT, ADMIN_USER_DOCUMENT);
 
 		Document doc = Mockito.mock(Document.class);
-		Mockito.when(doc.getOwningModuleName()).thenReturn("admin");
+		Mockito.when(doc.getOwningModuleName()).thenReturn(ADMIN_MODULE_NAME);
 		Mockito.when(doc.getName()).thenReturn("SpecialUser");
 
-		assertEquals("admin.User", customer.getBaseDocument(doc));
+		assertEquals(ADMIN_USER_DOCUMENT, customer.getBaseDocument(doc));
 	}
 
 	@Test
 	void getExportedReferencesReturnsNullWhenMapIsEmpty() {
 		CustomerImpl customer = new CustomerImpl();
 		Document doc = Mockito.mock(Document.class);
-		Mockito.when(doc.getOwningModuleName()).thenReturn("admin");
+		Mockito.when(doc.getOwningModuleName()).thenReturn(ADMIN_MODULE_NAME);
 		Mockito.when(doc.getName()).thenReturn("User");
 		assertNull(customer.getExportedReferences(doc));
 	}

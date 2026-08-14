@@ -181,9 +181,9 @@ public interface JobScheduler extends SystemObserver {
 
 	/**
 	 * Validates all Skyve meta-data for all customers asynchronously.
-	 * This is called by Skyve at startup, after all customer Observer.startup() callbacks
+	 * This is called by Skyve at startup, after all customer {@link org.skyve.metadata.controller.Observer#serverStartup} callbacks
 	 * to enable adjustment of repository configuration to occur before complete meta-data validation.
-	 * Any validation errors are logged but do no abort Skyve application deployment. 
+	 * Any validation errors are logged but do not abort Skyve application deployment.
 	 */
 	void validateMetaData();
 

@@ -794,11 +794,20 @@ public class CustomerImpl implements Customer {
 	}
 
 	/**
-	 * Notifies all registered observers that customer startup is beginning.
+	 * Notifies all registered observers for this customer that server startup is beginning.
 	 */
-	public void notifyStartup() {
+	public void notifyServerStartup() {
 		for (ObserverMetaData observer : observers.values()) {
-			observer.getObserver().startup(this);
+			observer.getObserver().serverStartup(this);
+		}
+	}
+
+	/**
+	 * Notifies all registered observers for this customer that data startup is beginning.
+	 */
+	public void notifyDataStartup() {
+		for (ObserverMetaData observer : observers.values()) {
+			observer.getObserver().dataStartup(this);
 		}
 	}
 
@@ -1611,9 +1620,6 @@ public class CustomerImpl implements Customer {
 	 */
     @Override
     public String toString() {
-        return MoreObjects.toStringHelper(this)
-                          .add("name", name)
-                          .toString();
+        return MoreObjects.toStringHelper(this).add("name", name).toString();
     }
 }
-       

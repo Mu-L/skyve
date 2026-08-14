@@ -44,7 +44,6 @@ import org.skyve.impl.metadata.controller.CustomisationsStaticSingleton;
 import org.skyve.impl.metadata.customer.CustomerImpl;
 import org.skyve.impl.metadata.repository.DefaultRepository;
 import org.skyve.impl.metadata.repository.ProvidedRepositoryFactory;
-import org.skyve.impl.metadata.user.SuperUser;
 import org.skyve.impl.persistence.AbstractPersistence;
 import org.skyve.impl.persistence.RDBMSDynamicPersistence;
 import org.skyve.impl.persistence.hibernate.HibernateContentPersistence;
@@ -71,6 +70,7 @@ import org.skyve.util.Util;
 import org.skyve.util.logging.SkyveLoggerFactory;
 import org.slf4j.Logger;
 
+import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
@@ -150,7 +150,7 @@ public class SkyveContextListener implements ServletContextListener {
 			EXT.getAddInManager().startup();
 			
 			// ensure that the schema is created before trying to init the job scheduler
-			initialiseSchemaAndBootstrap();
+			initialiseSchema();
 			
 			JobSchedulerStaticSingleton.setDefault();
 			
@@ -168,26 +168,8 @@ public class SkyveContextListener implements ServletContextListener {
 			scc.setHttpOnly(true);
 			scc.setSecure(Util.isSecureUrl());
 
-			// Notify any observers of the startup.
-			ProvidedRepository repository = ProvidedRepositoryFactory.get();
-			if (UtilImpl.CUSTOMER != null) {
-				// if a default customer is specified, only notify that one
-				CustomerImpl internalCustomer = (CustomerImpl) repository.getCustomer(UtilImpl.CUSTOMER);
-				if (internalCustomer == null) {
-					throw new IllegalStateException("UtilImpl.CUSTOMER " + UtilImpl.CUSTOMER + DOES_NOT_EXIST);
-				}
-				internalCustomer.notifyStartup();
-			}
-			else {
-				// notify all customers
-				for (String customerName : repository.getAllCustomerNames()) {
-					CustomerImpl internalCustomer = (CustomerImpl) repository.getCustomer(customerName);
-					if (internalCustomer == null) {
-						throw new IllegalStateException("Customer " + customerName + DOES_NOT_EXIST);
-					}
-					internalCustomer.notifyStartup();
-				}
-			}
+			// Notify observers before metadata validation.
+			ProvidedRepository.notifyAllCustomersObservers(c -> ((CustomerImpl) c).notifyServerStartup());
 			
 			// Validate Skyve meta-data
 			jobScheduler.validateMetaData();
@@ -210,7 +192,7 @@ public class SkyveContextListener implements ServletContextListener {
 	 *
 	 * @param ctx The servlet context used to resolve init params and real paths.
 	 */
-	public static void populateUtilImpl(ServletContext ctx) {
+	public static void populateUtilImpl(@Nonnull ServletContext ctx) {
 		UtilImpl.SKYVE_CONTEXT_REAL_PATH = ctx.getRealPath("/");
 		
 		// This can be set in web.xml or as a command line -D parameter, but if not set, 
@@ -285,27 +267,17 @@ public class SkyveContextListener implements ServletContextListener {
 		configureArchiveProperties(properties);
 	}
 
-	private static void initialiseSchemaAndBootstrap() {
+	private static void initialiseSchema() {
 		AbstractPersistence persistence = null;
 		try {
 			persistence = (AbstractPersistence) CORE.getPersistence();
 			persistence.begin();
-			if ((UtilImpl.ENVIRONMENT_IDENTIFIER != null) && (UtilImpl.BOOTSTRAP_CUSTOMER != null)) {
-				SuperUser user = new SuperUser();
-				user.setCustomerName(UtilImpl.BOOTSTRAP_CUSTOMER);
-				user.setContactName(UtilImpl.BOOTSTRAP_USER);
-				user.setName(UtilImpl.BOOTSTRAP_USER);
-				user.setPasswordHash(EXT.hashPassword(UtilImpl.BOOTSTRAP_PASSWORD));
-				persistence.setUser(user);
-
-				EXT.bootstrap(persistence);
-			}
 		}
 		catch (Exception e) {
 			if (persistence != null) {
 				persistence.rollback();
 			}
-			throw new IllegalStateException("Cannot initialise either the data schema or the bootstrap user.", e);
+			throw new IllegalStateException("Cannot initialise the data schema.", e);
 		}
 		finally {
 			if (persistence != null) {
@@ -1312,25 +1284,7 @@ public class SkyveContextListener implements ServletContextListener {
 									try {
 										try {
 											// Notify any observers of the shutdown.
-											ProvidedRepository repository = ProvidedRepositoryFactory.get();
-											if (UtilImpl.CUSTOMER != null) {
-												// if a default customer is specified, only notify that one
-												CustomerImpl internalCustomer = (CustomerImpl) repository.getCustomer(UtilImpl.CUSTOMER);
-												if (internalCustomer == null) {
-													throw new IllegalStateException("UtilImpl.CUSTOMER " + UtilImpl.CUSTOMER + DOES_NOT_EXIST);
-												}
-												internalCustomer.notifyShutdown();
-											} 
-											else {
-												// notify all customers
-												for (String customerName : repository.getAllCustomerNames()) {
-													CustomerImpl internalCustomer = (CustomerImpl) repository.getCustomer(customerName);
-													if (internalCustomer == null) {
-														throw new IllegalStateException("Customer " + customerName + DOES_NOT_EXIST);
-													}
-													internalCustomer.notifyShutdown();
-												}
-											}
+											ProvidedRepository.notifyAllCustomersObservers(c -> ((CustomerImpl) c).notifyShutdown());
 										}
 										finally {
 											PushMessage.stopReaper();
