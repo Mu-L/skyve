@@ -169,7 +169,7 @@ public class SkyveContextListener implements ServletContextListener {
 			scc.setSecure(Util.isSecureUrl());
 
 			// Notify observers before metadata validation.
-			ProvidedRepository.notifyAllCustomersObservers(c -> ((CustomerImpl) c).notifyServerStartup());
+			ProvidedRepository.notifyAllCustomersObservers(c -> ((CustomerImpl) c).notifyStartup());
 			
 			// Validate Skyve meta-data
 			jobScheduler.validateMetaData();

@@ -794,20 +794,20 @@ public class CustomerImpl implements Customer {
 	}
 
 	/**
-	 * Notifies all registered observers for this customer that server startup is beginning.
+	 * Notifies all registered observers for this customer that startup is beginning.
 	 */
-	public void notifyServerStartup() {
+	public void notifyStartup() {
 		for (ObserverMetaData observer : observers.values()) {
-			observer.getObserver().serverStartup(this);
+			observer.getObserver().startup(this);
 		}
 	}
 
 	/**
-	 * Notifies all registered observers for this customer that data startup is beginning.
+	 * Notifies all registered observers for this customer that data tier is ready for use.
 	 */
-	public void notifyDataStartup() {
+	public void notifyDataTierReady() {
 		for (ObserverMetaData observer : observers.values()) {
-			observer.getObserver().dataStartup(this);
+			observer.getObserver().dataTierReady(this);
 		}
 	}
 

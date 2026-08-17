@@ -72,7 +72,7 @@ class ContentStartupJobH2Test extends AbstractH2TestTruncate {
 		registerDataStartupObserver();
 		CORE.getPersistence().commit(true);
 
-		new ContentStartupJob().execute(null);
+		new DataTierStartupJob().execute(null);
 		boolean bootstrapUserExists = bootstrapUserExists();
 
 		assertTrue(RecordingContentManager.STARTED.get());
@@ -88,7 +88,7 @@ class ContentStartupJobH2Test extends AbstractH2TestTruncate {
 		AbstractContentManager.IMPLEMENTATION_CLASS = FailingContentManager.class;
 		CORE.getPersistence().commit(true);
 
-		new ContentStartupJob().execute(null);
+		new DataTierStartupJob().execute(null);
 		boolean bootstrapUserExists = bootstrapUserExists();
 
 		assertFalse(bootstrapUserExists);
@@ -173,12 +173,12 @@ class ContentStartupJobH2Test extends AbstractH2TestTruncate {
 		}
 
 		@Override
-		public void serverStartup(@Nonnull Customer customer) {
+		public void startup(@Nonnull Customer customer) {
 			// Nothing to test for server startup here.
 		}
 
 		@Override
-		public void dataStartup(@Nonnull Customer customer) {
+		public void dataTierReady(@Nonnull Customer customer) {
 			CALLED.set(true);
 			CONTENT_STARTED.set(RecordingContentManager.STARTED.get());
 

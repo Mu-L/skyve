@@ -188,8 +188,8 @@ public class QuartzJobScheduler implements JobScheduler {
 							.build();
 		JOB_SCHEDULER.scheduleJob(detail, trigger);
 
-		// Initialise the CMS in a 1 shot immediate job
-		detail = JobBuilder.newJob(ContentStartupJob.class)
+		// Initialise the data tier in a 1 shot immediate job
+		detail = JobBuilder.newJob(DataTierStartupJob.class)
 							.withIdentity("CMS Startup", INTERNAL_JOB_GROUP_NAME)
 							.storeDurably(false)
 							.build();

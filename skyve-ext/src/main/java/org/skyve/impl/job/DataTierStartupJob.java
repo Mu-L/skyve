@@ -16,14 +16,14 @@ import org.slf4j.Logger;
 
 /**
  * Starts the content management system asynchronously, creates the configured bootstrap user, and invokes customer
- * data-startup observers in the same persistence context.
+ * data-tier-ready observers in the same super user persistence context.
  *
  * <p>Content startup can take a while, so this work does not block the app server deployment process.
  *
  * @author mike
  */
-public class ContentStartupJob implements Job {
-    private static final Logger LOGGER = SkyveLoggerFactory.getLogger(ContentStartupJob.class);
+public class DataTierStartupJob implements Job {
+    private static final Logger LOGGER = SkyveLoggerFactory.getLogger(DataTierStartupJob.class);
 
 	@Override
 	@SuppressWarnings("java:S1141") // nested try/catch OK here - its simple
@@ -71,7 +71,7 @@ public class ContentStartupJob implements Job {
 				persistence.begin();
 			}
 
-			ProvidedRepository.notifyAllCustomersObservers(c -> ((CustomerImpl) c).notifyDataStartup());
+			ProvidedRepository.notifyAllCustomersObservers(c -> ((CustomerImpl) c).notifyDataTierReady());
 		}
 		catch (Exception e) {
 			if (persistence != null) {

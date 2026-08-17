@@ -1,5 +1,17 @@
 package org.skyve.impl.metadata.customer;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -18,26 +30,14 @@ import org.skyve.metadata.controller.Interceptor;
 import org.skyve.metadata.controller.Observer;
 import org.skyve.metadata.controller.ServerSideActionResult;
 import org.skyve.metadata.customer.CustomerRole;
+import org.skyve.metadata.customer.HTMLResources;
 import org.skyve.metadata.customer.InterceptorMetaData;
+import org.skyve.metadata.customer.LoginResources;
 import org.skyve.metadata.customer.ObserverMetaData;
 import org.skyve.metadata.customer.UIResources;
-import org.skyve.metadata.customer.HTMLResources;
-import org.skyve.metadata.customer.LoginResources;
 import org.skyve.metadata.model.document.Document;
 import org.skyve.metadata.module.Module;
 import org.skyve.web.WebContext;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @SuppressWarnings({"static-method", "boxing", "null"})
 class CustomerImplTest {
@@ -430,13 +430,13 @@ class CustomerImplTest {
         @Test
         void testNotifyServerStartupWithNoObserversDoesNotThrow() {
                 CustomerImpl customer = new CustomerImpl();
-                assertDoesNotThrow(customer::notifyServerStartup);
+                assertDoesNotThrow(customer::notifyStartup);
         }
 
         @Test
         void testNotifyDataStartupWithNoObserversDoesNotThrow() {
                 CustomerImpl customer = new CustomerImpl();
-                assertDoesNotThrow(customer::notifyDataStartup);
+                assertDoesNotThrow(customer::notifyDataTierReady);
         }
 
         @Test
@@ -1216,16 +1216,16 @@ class CustomerImplTest {
 	void notifyServerStartupCallsObserver() {
 		Observer observer = mock(Observer.class);
 		CustomerImpl customer = customerWithObserver(observer);
-		customer.notifyServerStartup();
-		verify(observer).serverStartup(customer);
+		customer.notifyStartup();
+		verify(observer).startup(customer);
 	}
 
 	@Test
-	void notifyDataStartupCallsObserver() {
+	void notifyDataTierReadyCallsObserver() {
 		Observer observer = mock(Observer.class);
 		CustomerImpl customer = customerWithObserver(observer);
-		customer.notifyDataStartup();
-		verify(observer).dataStartup(customer);
+		customer.notifyDataTierReady();
+		verify(observer).dataTierReady(customer);
 	}
 
 	@Test
@@ -1236,11 +1236,11 @@ class CustomerImplTest {
 		addObserver(customer, "com.example.FirstObserver", first);
 		addObserver(customer, "com.example.SecondObserver", second);
 
-		customer.notifyServerStartup();
+		customer.notifyStartup();
 
 		InOrder notificationOrder = inOrder(first, second);
-		notificationOrder.verify(first).serverStartup(customer);
-		notificationOrder.verify(second).serverStartup(customer);
+		notificationOrder.verify(first).startup(customer);
+		notificationOrder.verify(second).startup(customer);
 	}
 
 	@Test

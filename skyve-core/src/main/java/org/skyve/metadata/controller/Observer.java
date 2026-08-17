@@ -11,11 +11,11 @@ import jakarta.servlet.http.HttpSession;
  * events.
  *
  * <p>
- * Application startup occurs in two phases. {@link #serverStartup(Customer)}
- * runs synchronously after Skyve's server services have started and before
+ * Application startup occurs in two phases. {@link #startup(Customer)}
+ * runs synchronously after Skyve's services have started and before
  * metadata validation, allowing observers to populate or customise Skyve or
- * system metadata. {@link #dataStartup(Customer)} runs asynchronously after
- * content startup and bootstrap, with the startup job's persistence context
+ * system metadata. {@link #dataTierReady(Customer)} runs asynchronously after
+ * content startup and bootstrap, with a super user persistence context
  * available to the calling thread.
  *
  * @author mike
@@ -31,18 +31,18 @@ public interface Observer {
 	 *
 	 * @param customer The customer observing.
 	 */
-	void serverStartup(@Nonnull Customer customer);
+	void startup(@Nonnull Customer customer);
 
 	/**
-	 * Called during asynchronous data startup after the content manager has started
+	 * Called during asynchronous data tier startup after persistence and content manager has started
 	 * and Skyve bootstrap has completed.
 	 *
 	 * <p>
-	 * A persistence context is available in the thread.
+	 * A persistence context with a Super User is available in the thread.
 	 *
 	 * @param customer The customer observing.
 	 */
-	void dataStartup(@Nonnull Customer customer);
+	void dataTierReady(@Nonnull Customer customer);
 
 	/**
 	 * Called when shutting down a skyve application. All Skyve services are still

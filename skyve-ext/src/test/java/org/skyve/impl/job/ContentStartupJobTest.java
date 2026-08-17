@@ -36,7 +36,7 @@ class ContentStartupJobTest {
 
 	@Test
 	void executeStartsContentManager() {
-		ContentStartupJob job = new ContentStartupJob();
+		DataTierStartupJob job = new DataTierStartupJob();
 
 		assertDoesNotThrow(() -> job.execute(null));
 
@@ -47,7 +47,7 @@ class ContentStartupJobTest {
 	@Test
 	void executeSwallowsContentManagerStartupFailure() {
 		RecordingContentManager.FAIL_STARTUP.set(true);
-		ContentStartupJob job = new ContentStartupJob();
+		DataTierStartupJob job = new DataTierStartupJob();
 
 		assertDoesNotThrow(() -> job.execute(null));
 

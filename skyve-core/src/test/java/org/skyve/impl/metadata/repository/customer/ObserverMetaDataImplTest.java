@@ -20,8 +20,8 @@ class ObserverMetaDataImplTest {
 
 	/** Concrete no-arg Observer implementation for testing. */
 	public static class NoOpObserver implements Observer {
-		@Override public void serverStartup(@Nonnull Customer customer) { /* no-op */ }
-		@Override public void dataStartup(@Nonnull Customer customer) { /* no-op */ }
+		@Override public void startup(@Nonnull Customer customer) { /* no-op */ }
+		@Override public void dataTierReady(@Nonnull Customer customer) { /* no-op */ }
 		@Override public void shutdown(@Nonnull Customer customer) { /* no-op */ }
 		@Override public void beforeBackup(@Nonnull Customer customer) { /* no-op */ }
 		@Override public void afterBackup(@Nonnull Customer customer) { /* no-op */ }
