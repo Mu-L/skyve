@@ -1,5 +1,6 @@
 package org.skyve.impl.job;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,9 +30,12 @@ import org.skyve.persistence.DocumentQuery;
 
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.HttpSession;
+import modules.admin.Group.GroupExtension;
+import modules.admin.domain.Group;
+import modules.admin.domain.GroupRole;
 import util.AbstractH2TestTruncate;
 
-class ContentStartupJobH2Test extends AbstractH2TestTruncate {
+class DataTierStartupJobH2Test extends AbstractH2TestTruncate {
 	private static final String CUSTOMER_NAME = "bizhub";
 
 	private OriginalConfiguration originalConfiguration;
@@ -95,12 +99,45 @@ class ContentStartupJobH2Test extends AbstractH2TestTruncate {
 		assertFalse(DataStartupObserver.CALLED.get());
 	}
 
+	@Test
+	void executeUsesExistingBootstrapUserIdWhenObserverPersistsDocument() throws Exception {
+		AbstractContentManager.IMPLEMENTATION_CLASS = RecordingContentManager.class;
+		registerDataStartupObserver();
+		CORE.getPersistence().commit(true);
+
+		new DataTierStartupJob().execute(null);
+		DataStartupObserver.persistDocumentOnNextCallback();
+		new DataTierStartupJob().execute(null);
+		boolean bootstrapUserExists = bootstrapUserExists();
+
+		assertTrue(bootstrapUserExists);
+		assertNotNull(DataStartupObserver.PERSISTED_BIZ_USER_ID.get());
+		assertEquals(DataStartupObserver.ACTIVE_USER_ID.get(), DataStartupObserver.PERSISTED_BIZ_USER_ID.get());
+	}
+
+	@Test
+	void executeUsesConfiguredUserIdWhenBootstrapIsSkipped() throws Exception {
+		AbstractContentManager.IMPLEMENTATION_CLASS = RecordingContentManager.class;
+		UtilImpl.ENVIRONMENT_IDENTIFIER = null;
+		registerDataStartupObserver();
+		DataStartupObserver.persistDocumentOnNextCallback();
+		CORE.getPersistence().commit(true);
+
+		new DataTierStartupJob().execute(null);
+		boolean bootstrapUserExists = bootstrapUserExists();
+
+		assertFalse(bootstrapUserExists);
+		assertNotNull(DataStartupObserver.ACTIVE_USER_ID.get());
+		assertEquals(7, UUID.fromString(DataStartupObserver.ACTIVE_USER_ID.get()).version());
+		assertEquals(DataStartupObserver.ACTIVE_USER_ID.get(), DataStartupObserver.PERSISTED_BIZ_USER_ID.get());
+	}
+
 	private record OriginalConfiguration(Class<? extends AbstractContentManager> contentManagerClass,
-									 String environmentIdentifier,
-									 String bootstrapCustomer,
-									 String bootstrapUser,
-									 String bootstrapEmail,
-									 String bootstrapPassword) {
+			String environmentIdentifier,
+			String bootstrapCustomer,
+			String bootstrapUser,
+			String bootstrapEmail,
+			String bootstrapPassword) {
 	}
 
 	@SuppressWarnings({ "unused", "null" })
@@ -116,7 +153,7 @@ class ContentStartupJobH2Test extends AbstractH2TestTruncate {
 		persistence.begin();
 
 		DocumentQuery query = persistence.newDocumentQuery(modules.admin.domain.User.MODULE_NAME,
-													modules.admin.domain.User.DOCUMENT_NAME);
+				modules.admin.domain.User.DOCUMENT_NAME);
 		query.getFilter().addEquals(AppConstants.USER_NAME_ATTRIBUTE_NAME, bootstrapUserName);
 		return query.beanResult() != null;
 	}
@@ -163,13 +200,23 @@ class ContentStartupJobH2Test extends AbstractH2TestTruncate {
 		private static final AtomicBoolean CALLED = new AtomicBoolean();
 		private static final AtomicBoolean CONTENT_STARTED = new AtomicBoolean();
 		private static final AtomicBoolean BOOTSTRAP_USER_VISIBLE = new AtomicBoolean();
+		private static final AtomicBoolean PERSIST_DOCUMENT = new AtomicBoolean();
 		private static final AtomicReference<String> EXPECTED_BOOTSTRAP_USER_NAME = new AtomicReference<>();
+		private static final AtomicReference<String> ACTIVE_USER_ID = new AtomicReference<>();
+		private static final AtomicReference<String> PERSISTED_BIZ_USER_ID = new AtomicReference<>();
 
 		static void reset(String bootstrapUserName) {
 			CALLED.set(false);
 			CONTENT_STARTED.set(false);
 			BOOTSTRAP_USER_VISIBLE.set(false);
+			PERSIST_DOCUMENT.set(false);
 			EXPECTED_BOOTSTRAP_USER_NAME.set(bootstrapUserName);
+			ACTIVE_USER_ID.set(null);
+			PERSISTED_BIZ_USER_ID.set(null);
+		}
+
+		static void persistDocumentOnNextCallback() {
+			PERSIST_DOCUMENT.set(true);
 		}
 
 		@Override
@@ -182,10 +229,22 @@ class ContentStartupJobH2Test extends AbstractH2TestTruncate {
 			CALLED.set(true);
 			CONTENT_STARTED.set(RecordingContentManager.STARTED.get());
 
-			DocumentQuery query = CORE.getPersistence().newDocumentQuery(modules.admin.domain.User.MODULE_NAME,
-																	modules.admin.domain.User.DOCUMENT_NAME);
+			DocumentQuery query = CORE.getPersistence()
+					.newDocumentQuery(modules.admin.domain.User.MODULE_NAME,
+							modules.admin.domain.User.DOCUMENT_NAME);
 			query.getFilter().addEquals(AppConstants.USER_NAME_ATTRIBUTE_NAME, EXPECTED_BOOTSTRAP_USER_NAME.get());
 			BOOTSTRAP_USER_VISIBLE.set(query.beanResult() != null);
+
+			if (PERSIST_DOCUMENT.compareAndSet(true, false)) {
+				ACTIVE_USER_ID.set(CORE.getUser().getId());
+				GroupExtension group = Group.newInstance();
+				group.setName("Startup " + EXPECTED_BOOTSTRAP_USER_NAME.get().substring(0, 16));
+				GroupRole role = GroupRole.newInstance();
+				role.setRoleName("admin.BasicUser");
+				group.addRolesElement(role);
+				group = CORE.getPersistence().save(group);
+				PERSISTED_BIZ_USER_ID.set(group.getBizUserId());
+			}
 		}
 
 		@Override

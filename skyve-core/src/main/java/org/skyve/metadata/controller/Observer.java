@@ -34,7 +34,7 @@ public interface Observer {
 	void startup(@Nonnull Customer customer);
 
 	/**
-	 * Called during asynchronous data tier startup after persistence and content manager has started
+	 * Called during asynchronous data tier startup after persistence and content manager have started
 	 * and Skyve bootstrap has completed.
 	 *
 	 * <p>

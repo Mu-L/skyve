@@ -75,9 +75,9 @@ import org.skyve.persistence.Persistence;
 import org.skyve.report.Reporting;
 import org.skyve.tag.TagManager;
 import org.skyve.util.GeoIPService;
-import org.skyve.util.OWASP;
 import org.skyve.util.Mail;
 import org.skyve.util.MailService;
+import org.skyve.util.OWASP;
 import org.skyve.util.PushMessage;
 import org.skyve.util.PushMessage.PushMessageReceiver;
 import org.skyve.util.SMSService;
@@ -690,14 +690,11 @@ public class EXT {
 		q.getFilter().addEquals(AppConstants.USER_NAME_ATTRIBUTE_NAME, UtilImpl.BOOTSTRAP_USER);
 		PersistentBean user = q.beanResult();
 		if (user == null) {
-            LOGGER.info("CREATING BOOTSTRAP USER {}/{} ({})",
-                    UtilImpl.BOOTSTRAP_CUSTOMER,
-                    UtilImpl.BOOTSTRAP_USER,
-                    UtilImpl.BOOTSTRAP_EMAIL);
+            LOGGER.info("CREATING BOOTSTRAP USER {}/{} ({})", UtilImpl.BOOTSTRAP_CUSTOMER, UtilImpl.BOOTSTRAP_USER, UtilImpl.BOOTSTRAP_EMAIL);
 
 			// Create user
 			user = userDoc.newInstance(u);
-			u.setId(user.getBizId());
+			u.setId(user.getBizId()); // set the persistence super-user bizId
 			user.setBizUserId(u.getId());
 			BindUtil.set(user, AppConstants.USER_NAME_ATTRIBUTE_NAME, UtilImpl.BOOTSTRAP_USER);
 			BindUtil.set(user, AppConstants.PASSWORD_ATTRIBUTE_NAME, u.getPasswordHash());
@@ -730,9 +727,8 @@ public class EXT {
 			p.save(user);
 		}
 		else {
-            LOGGER.info("BOOTSTRAP USER {}/{} ALREADY EXISTS",
-                    UtilImpl.BOOTSTRAP_CUSTOMER,
-                    UtilImpl.BOOTSTRAP_USER);
+            LOGGER.info("BOOTSTRAP USER {}/{} ALREADY EXISTS", UtilImpl.BOOTSTRAP_CUSTOMER, UtilImpl.BOOTSTRAP_USER);
+			u.setId(user.getBizId()); // set the persistence super-user bizId
 		}
 	}
 

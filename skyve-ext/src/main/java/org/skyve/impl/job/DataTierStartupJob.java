@@ -10,6 +10,7 @@ import org.skyve.impl.metadata.customer.CustomerImpl;
 import org.skyve.impl.metadata.user.SuperUser;
 import org.skyve.impl.persistence.AbstractPersistence;
 import org.skyve.impl.util.UtilImpl;
+import org.skyve.impl.util.UUIDv7;
 import org.skyve.metadata.repository.ProvidedRepository;
 import org.skyve.util.logging.SkyveLoggerFactory;
 import org.slf4j.Logger;
@@ -61,6 +62,7 @@ public class DataTierStartupJob implements Job {
 			SuperUser user = new SuperUser();
 			user.setCustomerName(UtilImpl.BOOTSTRAP_CUSTOMER);
 			user.setContactName(UtilImpl.BOOTSTRAP_USER);
+			user.setId(UUIDv7.create().toString());
 			user.setName(UtilImpl.BOOTSTRAP_USER);
 			user.setPasswordHash(EXT.hashPassword(UtilImpl.BOOTSTRAP_PASSWORD));
 			persistence.setUser(user);
