@@ -436,9 +436,9 @@ public class SmartClientListServlet extends HttpServlet {
 					// Replace CSRF token
 					StateUtil.replaceToken(session, currentCsrfToken, newCsrfToken);
 
-					// serialize and cache conversation, if applicable
+					// serialise and cache conversation, if applicable
 					if (webContext != null) {
-						StateUtil.cacheConversation(webContext);
+						StateUtil.commitAndCacheConversation(webContext);
 					}
 					
 					if (key != null) {

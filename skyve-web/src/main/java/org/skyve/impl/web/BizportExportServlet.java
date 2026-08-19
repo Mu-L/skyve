@@ -129,7 +129,7 @@ public class BizportExportServlet extends HttpServlet {
 
 						// lastly put the conversation in the cache, after the response is sent
 						// and all lazy loading of domain objects has been realised
-						StateUtil.cacheConversation(webContext);
+						StateUtil.commitAndCacheConversation(webContext);
 					}
 					catch (InvocationTargetException e) {
 						throw e.getTargetException();

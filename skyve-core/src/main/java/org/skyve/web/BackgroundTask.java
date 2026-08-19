@@ -26,13 +26,14 @@ public interface BackgroundTask<T extends Bean> {
 	T getBean();
 
 	/**
-	 * Persists or places the backing conversation into the conversation cache.
+	 * Commits any active persistence transaction and places the backing conversation
+	 * into the conversation cache.
 	 *
-	 * <p>Side effects: may write conversation state to cache/storage.
-	 *
-	 * @throws Exception if caching fails
+	 * <p>A replacement transaction is begun before this method returns so background
+	 * work can continue. Later failure can roll back only work performed after this
+	 * checkpoint.
 	 */
-	void cacheConversation() throws Exception;
+	void cacheConversationAndCycleTransaction();
 
 	/**
 	 * Executes task-specific background work.
@@ -43,5 +44,6 @@ public interface BackgroundTask<T extends Bean> {
 	 * @param bean the task bean/context
 	 * @throws Exception if execution fails
 	 */
+	@SuppressWarnings("java:S112") // throwing Exception is part of the convenience API
 	void execute(T bean) throws Exception;
 }

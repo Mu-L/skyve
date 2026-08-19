@@ -161,7 +161,7 @@ public class MockJobSchedulerTest {
 		}
 
 		@Override
-		public void cacheConversation() {
+		public void cacheConversationAndCycleTransaction() {
 			// no-op
 		}
 

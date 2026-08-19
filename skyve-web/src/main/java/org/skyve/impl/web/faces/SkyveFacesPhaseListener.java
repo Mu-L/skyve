@@ -35,7 +35,7 @@ import jakarta.faces.event.PhaseListener;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Listens for lifecycle events and applies Skyve-specific web behavior.
+ * Listens for lifecycle events and applies Skyve-specific web behaviour.
  */
 public class SkyveFacesPhaseListener implements PhaseListener {
 	private static final long serialVersionUID = 3757264858610371158L;
@@ -196,10 +196,8 @@ public class SkyveFacesPhaseListener implements PhaseListener {
 	 *
 	 * @param view the faces view to hydrate
 	 * @param ec the external context associated with the current request
-	 * @throws Exception when conversation restoration fails
 	 */
-	private static void restore(FacesView view, ExternalContext ec)
-	throws Exception {
+	private static void restore(FacesView view, ExternalContext ec) {
 		// restore the context
 		AbstractWebContext webContext = StateUtil.getCachedConversation(view.getDehydratedWebId(),
 																			(HttpServletRequest) ec.getRequest());
@@ -219,8 +217,7 @@ public class SkyveFacesPhaseListener implements PhaseListener {
 	 * @param ec the external context associated with the current request
 	 * @throws Exception when conversation restoration fails
 	 */
-	private static void restore(String webId, ExternalContext ec)
-	throws Exception {
+	private static void restore(String webId, ExternalContext ec) {
 		// restore the context
 		AbstractWebContext webContext = StateUtil.getCachedConversation(webId, (HttpServletRequest) ec.getRequest());
 		if (webContext != null) { // should always be the case
@@ -255,8 +252,7 @@ public class SkyveFacesPhaseListener implements PhaseListener {
 	 * @throws Exception when post-render lifecycle processing fails
 	 */
 	@SuppressWarnings("java:S3776") // Complexity OK
-	private static void afterResponseRendered(PhaseEvent event)
-	throws Exception {
+	private static void afterResponseRendered(PhaseEvent event) {
 		try {
 			UIViewRoot vr = event.getFacesContext().getViewRoot();
 			if (vr != null) {
@@ -264,46 +260,37 @@ public class SkyveFacesPhaseListener implements PhaseListener {
 				String managedBeanName = (String) vr.getAttributes().get(FacesUtil.MANAGED_BEAN_NAME_KEY);
 				if (managedBeanName != null) {
 					FacesView view = (FacesView) FacesUtil.getNamed(managedBeanName);
-					if (view != null) {
-						AbstractWebContext webContext = view.getWebContext();
+					AbstractWebContext webContext = view.getWebContext();
 
-						// Call postRender() if applicable
-						Bean postRenderBean = view.getPostRenderBean();
-						if (postRenderBean != null) {
-							CustomerImpl internalCustomer = (CustomerImpl) CORE.getCustomer();
-							boolean vetoed = internalCustomer.interceptBeforePostRender(postRenderBean, webContext);
-							if (! vetoed) {
-								@SuppressWarnings("unchecked")
-								Bizlet<Bean> bizlet = (Bizlet<Bean>) view.getPostRenderBizlet();
-				    			if (bizlet != null) {
-									if (UtilImpl.BIZLET_TRACE) {
-										BIZLET_LOGGER.info("Entering {}.postRender: {}, {}", bizlet.getClass().getName(), postRenderBean, webContext);
-									}
-					    			bizlet.postRender(postRenderBean, webContext);
-					    			if (UtilImpl.BIZLET_TRACE) BIZLET_LOGGER.info("Exiting {}.postRender: {}, {}", bizlet.getClass().getName(), postRenderBean, webContext);
-				    			}
-								internalCustomer.interceptAfterPostRender(postRenderBean, webContext);
-							}
+					// Call postRender() if applicable
+					Bean postRenderBean = view.getPostRenderBean();
+					if (postRenderBean != null) {
+						CustomerImpl internalCustomer = (CustomerImpl) CORE.getCustomer();
+						boolean vetoed = internalCustomer.interceptBeforePostRender(postRenderBean, webContext);
+						if (! vetoed) {
+							@SuppressWarnings("unchecked")
+							Bizlet<Bean> bizlet = (Bizlet<Bean>) view.getPostRenderBizlet();
+			    			if (bizlet != null) {
+								if (UtilImpl.BIZLET_TRACE) {
+									BIZLET_LOGGER.info("Entering {}.postRender: {}, {}", bizlet.getClass().getName(), postRenderBean, webContext);
+								}
+				    			bizlet.postRender(postRenderBean, webContext);
+				    			if (UtilImpl.BIZLET_TRACE) BIZLET_LOGGER.info("Exiting {}.postRender: {}, {}", bizlet.getClass().getName(), postRenderBean, webContext);
+			    			}
+							internalCustomer.interceptAfterPostRender(postRenderBean, webContext);
 						}
-
-						// Cache the conversation
-						Severity maximumSeverity = event.getFacesContext().getMaximumSeverity();
-						if ((maximumSeverity == null) ||
-								(maximumSeverity.getOrdinal() < FacesMessage.SEVERITY_ERROR.getOrdinal())) {
-							// Commit (which ends the transaction and releases the JDBC connection) BEFORE
-							// serialising the conversation, so the Hibernate session is disconnected and
-							// serialises cleanly. A list grid that runs a query during the JSF RENDER phase
-							// otherwise leaves the session connected, causing "Cannot serialize SessionImpl
-							// while connected" and a corrupted conversation. Pass false so the EntityManager
-							// stays open for the cached conversation to be restored; the finally block below
-							// performs the final commit(true) which closes it. This is a reorder of the commit
-							// that already happens every request, not an additional commit.
-							AbstractPersistence.get().commit(false);
-							StateUtil.cacheConversation(webContext);
-						}
-						// Dehydrate the view
-						view.dehydrate();
 					}
+
+					// Cache the conversation
+					Severity maximumSeverity = event.getFacesContext().getMaximumSeverity();
+					if ((maximumSeverity == null) ||
+							(maximumSeverity.getOrdinal() < FacesMessage.SEVERITY_ERROR.getOrdinal())) {
+						// Conversation caching commits any active transaction without closing its
+						// persistence context, ensuring Hibernate has released its JDBC resources.
+						StateUtil.commitAndCacheConversation(webContext);
+					}
+					// Dehydrate the view
+					view.dehydrate();
 				}
 			}
 		}

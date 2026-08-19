@@ -255,7 +255,7 @@ class SmartClientCompleteServletTest {
 
 		SmartClientWebContext webContext = new SmartClientWebContext(CONVERSATION_KEY, request);
 		webContext.setCurrentBean(bean);
-		StateUtil.cacheConversation(webContext);
+		StateUtil.commitAndCacheConversation(webContext);
 		return request;
 	}
 

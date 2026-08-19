@@ -543,7 +543,7 @@ public class ContentUploadView extends AbstractUploadView {
 			String contentId = Objects.requireNonNull(content.getContentId(), "Uploaded content id");
 
 			// only put conversation in cache if we have been successful in executing
-			StateUtil.cacheConversation(webContext);
+			StateUtil.commitAndCacheConversation(webContext);
 
 			// update the content UUID value on the client and popoff the window on the stack
 			String sanitisedContentBinding = Objects.requireNonNull(BindUtil.sanitiseBinding(contentBinding), "Sanitised content binding");
@@ -666,7 +666,7 @@ public class ContentUploadView extends AbstractUploadView {
 				throw new DomainException("File Upload could not be processed", e);
 			}
 
-			StateUtil.cacheConversation(webContext);
+			StateUtil.commitAndCacheConversation(webContext);
 
 			if (exception.hasProblems()) {
 				addActionUploadProblems(exception, fc);

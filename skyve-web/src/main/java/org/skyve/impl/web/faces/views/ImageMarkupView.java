@@ -385,7 +385,7 @@ public class ImageMarkupView extends LocalisableView {
 						newContentId = newContent.getContentId();
 		
 						// only put conversation in cache if we have been successful in executing
-						StateUtil.cacheConversation(webContext);
+						StateUtil.commitAndCacheConversation(webContext);
 				
 						// update the content UUID value on the client and popoff the window on the stack
 						String sanitisedContentBinding = BindUtil.sanitiseBinding(contentBindingParameter);

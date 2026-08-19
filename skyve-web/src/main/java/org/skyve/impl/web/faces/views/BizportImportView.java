@@ -203,7 +203,7 @@ public class BizportImportView extends AbstractUploadView {
 			}
 
 			// only put conversation in cache if we have been successful in executing
-			StateUtil.cacheConversation(webContext);
+			StateUtil.commitAndCacheConversation(webContext);
 
 			if (exception.hasProblems()) {
 				for (Problem error : exception.getErrors()) {

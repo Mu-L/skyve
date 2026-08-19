@@ -38,7 +38,7 @@ class MockSupportClassesTest {
 		assertNotNull(context.getKey());
 		context.message(MessageSeverity.info, "m");
 		context.growl(MessageSeverity.warn, "g");
-		context.cacheConversation();
+		context.cacheConversationAndCycleTransaction();
 		context.background(null);
 		context.backgroundWithoutCachingConversation(null);
 		assertTrue(context.getGrowls().isEmpty());

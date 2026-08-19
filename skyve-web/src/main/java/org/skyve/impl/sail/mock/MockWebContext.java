@@ -46,7 +46,7 @@ public final class MockWebContext extends AbstractWebContext {
 	 * Skips conversation caching for mock execution.
 	 */
 	@Override
-	public void cacheConversation() throws Exception {
+	public void cacheConversationAndCycleTransaction() {
 		// do nothing
 	}
 
@@ -54,7 +54,7 @@ public final class MockWebContext extends AbstractWebContext {
 	 * Skips background scheduling for mock execution.
 	 */
 	@Override
-	public <T extends Bean> void background(Class<? extends BackgroundTask<T>> taskClass) throws Exception {
+	public <T extends Bean> void background(Class<? extends BackgroundTask<T>> taskClass) {
 		// do nothing
 	}
 
@@ -62,8 +62,7 @@ public final class MockWebContext extends AbstractWebContext {
 	 * Skips uncached background scheduling for mock execution.
 	 */
 	@Override
-	public <T extends Bean> void backgroundWithoutCachingConversation(Class<? extends BackgroundTask<T>> taskClass)
-	throws Exception {
+	public <T extends Bean> void backgroundWithoutCachingConversation(Class<? extends BackgroundTask<T>> taskClass) {
 		// do nothing
 	}
 

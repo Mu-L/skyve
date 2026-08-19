@@ -852,7 +852,7 @@ public class SmartClientEditServlet extends HttpServlet {
 			finally {
 				// lastly put the conversation in the cache, after the response is sent
 				// and all lazy loading of domain objects has been realised
-				StateUtil.cacheConversation(webContext);
+				StateUtil.commitAndCacheConversation(webContext);
 
 				if (key != null) {
 					Monitoring.measure(key);
@@ -1286,7 +1286,7 @@ public class SmartClientEditServlet extends HttpServlet {
 			finally {
 				// lastly put the conversation in the cache, after the response is sent
 				// and all lazy loading of domain objects has been realised
-				StateUtil.cacheConversation(webContext);
+				StateUtil.commitAndCacheConversation(webContext);
 			}
 		}
 	}
@@ -1373,7 +1373,7 @@ public class SmartClientEditServlet extends HttpServlet {
 			Monitoring.measure(RequestKey.delete(processDocument));
 		}
 		finally {
-			StateUtil.cacheConversation(webContext);
+			StateUtil.commitAndCacheConversation(webContext);
 		}
 	}
 	

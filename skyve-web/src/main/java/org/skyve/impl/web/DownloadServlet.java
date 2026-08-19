@@ -21,6 +21,7 @@ import org.skyve.metadata.module.Module;
 import org.skyve.metadata.user.User;
 import org.skyve.util.logging.SkyveLoggerFactory;
 import org.skyve.web.WebContext;
+import org.slf4j.Logger;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -29,8 +30,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
-import org.slf4j.Logger;
 
 /**
  * Implements file downloads for Skyve.
@@ -141,7 +140,7 @@ public class DownloadServlet extends HttpServlet {
 
 					// lastly put the conversation in the cache, after the response is sent
 					// and all lazy loading of domain objects has been realised
-					cacheConversation(webContext);
+					commitAndCacheConversation(webContext);
 				}
 				catch (InvocationTargetException e) {
 					throw e.getTargetException();
@@ -188,8 +187,7 @@ public class DownloadServlet extends HttpServlet {
 	}
 
 	@SuppressWarnings("static-method") // Test seam; subclasses override this to avoid the static StateUtil dependency.
-	void cacheConversation(@Nonnull AbstractWebContext webContext)
-	throws Exception {
-		StateUtil.cacheConversation(webContext);
+	void commitAndCacheConversation(@Nonnull AbstractWebContext webContext) {
+		StateUtil.commitAndCacheConversation(webContext);
 	}
 }

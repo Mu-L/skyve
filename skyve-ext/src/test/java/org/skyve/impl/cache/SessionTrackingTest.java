@@ -211,7 +211,7 @@ public class SessionTrackingTest {
 		DynamicBean bean = bean("bean-id");
 		TestWebContext context = new TestWebContext("12345678-1234-1234-1234-123456789012", "session-1");
 		context.setCurrentBean(bean);
-		StateUtil.cacheConversation(context);
+		StateUtil.commitAndCacheConversation(context);
 
 		AbstractWebContext result = StateUtil.getCachedConversation(context.getWebId(), request(session("session-1")));
 
@@ -224,7 +224,7 @@ public class SessionTrackingTest {
 	public void getCachedConversationRestoresConversationWhenNoRequestIsSupplied() throws Exception {
 		TestWebContext context = new TestWebContext("12345678-1234-1234-1234-123456789012", null);
 		context.setCurrentBean(bean("bean-id"));
-		StateUtil.cacheConversation(context);
+		StateUtil.commitAndCacheConversation(context);
 
 		AbstractWebContext result = StateUtil.getCachedConversation(context.getWebId(), null);
 
@@ -236,7 +236,7 @@ public class SessionTrackingTest {
 	public void getCachedConversationThrowsWhenRequestHasNoSession() throws Exception {
 		TestWebContext context = new TestWebContext("12345678-1234-1234-1234-123456789012", "session-1");
 		context.setCurrentBean(bean("bean-id"));
-		StateUtil.cacheConversation(context);
+		StateUtil.commitAndCacheConversation(context);
 
 		String webId1 = context.getWebId();
 		HttpServletRequest noSessionRequest = request(null);
@@ -247,7 +247,7 @@ public class SessionTrackingTest {
 	public void getCachedConversationThrowsWhenSessionIdDiffers() throws Exception {
 		TestWebContext context = new TestWebContext("12345678-1234-1234-1234-123456789012", "session-1");
 		context.setCurrentBean(bean("bean-id"));
-		StateUtil.cacheConversation(context);
+		StateUtil.commitAndCacheConversation(context);
 
 		String webId2 = context.getWebId();
 		HttpServletRequest differentSessionRequest = request(session("session-2"));
@@ -258,7 +258,7 @@ public class SessionTrackingTest {
 	public void getCachedConversationThrowsWhenStoredConversationHasNoSessionId() throws Exception {
 		TestWebContext context = new TestWebContext("12345678-1234-1234-1234-123456789012", null);
 		context.setCurrentBean(bean("bean-id"));
-		StateUtil.cacheConversation(context);
+		StateUtil.commitAndCacheConversation(context);
 
 		String webId3 = context.getWebId();
 		HttpServletRequest differentSessionRequest2 = request(session("session-1"));
@@ -424,8 +424,8 @@ public class SessionTrackingTest {
 		}
 
 		@Override
-		public void cacheConversation() throws Exception {
-			StateUtil.cacheConversation(this);
+		public void cacheConversationAndCycleTransaction() {
+			StateUtil.commitAndCacheConversation(this);
 		}
 
 		@Override

@@ -16,23 +16,20 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.skyve.content.MimeType;
 import org.skyve.domain.Bean;
 import org.skyve.impl.metadata.customer.CustomerImpl;
 import org.skyve.impl.persistence.AbstractPersistence;
+import org.skyve.impl.sail.mock.MockWebContext;
 import org.skyve.metadata.controller.Download;
 import org.skyve.metadata.controller.DownloadAction;
 import org.skyve.metadata.controller.WebFileInputStream;
 import org.skyve.metadata.model.document.Document;
 import org.skyve.metadata.module.Module;
 import org.skyve.metadata.user.User;
-import org.skyve.domain.messages.MessageSeverity;
-import org.skyve.web.BackgroundTask;
 import org.skyve.web.WebContext;
 
 import jakarta.servlet.ServletException;
@@ -258,56 +255,13 @@ class DownloadServletTest {
 	}
 
 	private static final class Lifecycle {
-		private final TestWebContext webContext = new TestWebContext();
+		private final MockWebContext webContext = new MockWebContext();
 		private final AbstractPersistence persistence = mock(AbstractPersistence.class);
 		private final CustomerImpl customer = mock(CustomerImpl.class);
 		private final Module module = mock(Module.class);
 		private final Document document = mock(Document.class);
 		private final User user = mock(User.class);
 		private final Bean bean = mock(Bean.class);
-	}
-
-	private static final class TestWebContext extends AbstractWebContext {
-		private static final long serialVersionUID = 1L;
-
-		private TestWebContext() {
-			super("test-web-context");
-		}
-
-		@Override
-		public List<Map<String, String>> getGrowls() {
-			return null;
-		}
-
-		@Override
-		public List<Map<String, String>> getMessages() {
-			return null;
-		}
-
-		@Override
-		public void message(MessageSeverity severity, String message) {
-			// Not needed for these lifecycle tests.
-		}
-
-		@Override
-		public void growl(MessageSeverity severity, String message) {
-			// Not needed for these lifecycle tests.
-		}
-
-		@Override
-		public void cacheConversation() {
-			// Not needed for these lifecycle tests.
-		}
-
-		@Override
-		public <T extends Bean> void background(Class<? extends BackgroundTask<T>> taskClass) {
-			// Not needed for these lifecycle tests.
-		}
-
-		@Override
-		public <T extends Bean> void backgroundWithoutCachingConversation(Class<? extends BackgroundTask<T>> taskClass) {
-			// Not needed for these lifecycle tests.
-		}
 	}
 
 	private static final class TestableDownloadServlet extends org.skyve.impl.web.DownloadServlet {
@@ -346,7 +300,7 @@ class DownloadServletTest {
 		}
 
 		@Override
-		void cacheConversation(AbstractWebContext contextToCache) {
+		void commitAndCacheConversation(AbstractWebContext contextToCache) {
 			cacheInvoked = true;
 			cachedWebContext = contextToCache;
 		}

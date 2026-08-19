@@ -142,7 +142,7 @@ public class ActionUtil {
     throws Exception {
 		// ensure that the proper conversation is stashed in the webContext object
 		AbstractWebContext webContext = facesView.getWebContext();
-		StateUtil.cacheConversation(webContext);
+		StateUtil.commitAndCacheConversation(webContext);
 
 		// Get the view's bean
 		Bean contextBean = facesView.getBean();

@@ -51,17 +51,17 @@ class AbstractWebContextTest {
 		}
 
 		@Override
-		public void cacheConversation() throws Exception {
+		public void cacheConversationAndCycleTransaction() {
 			// no-op
 		}
 
 		@Override
-		public <T extends Bean> void background(Class<? extends BackgroundTask<T>> taskClass) throws Exception {
+		public <T extends Bean> void background(Class<? extends BackgroundTask<T>> taskClass) {
 			// no-op
 		}
 
 		@Override
-		public <T extends Bean> void backgroundWithoutCachingConversation(Class<? extends BackgroundTask<T>> taskClass) throws Exception {
+		public <T extends Bean> void backgroundWithoutCachingConversation(Class<? extends BackgroundTask<T>> taskClass) {
 			// no-op
 		}
 	}

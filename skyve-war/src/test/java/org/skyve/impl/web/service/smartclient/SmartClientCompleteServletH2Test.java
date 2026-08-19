@@ -160,7 +160,7 @@ class SmartClientCompleteServletH2Test extends AbstractSkyveTest {
 			when(request.getLocale()).thenReturn(java.util.Locale.ENGLISH);
 			SmartClientWebContext webContext = new SmartClientWebContext(UUID.randomUUID().toString(), request);
 			webContext.setCurrentBean(bean);
-			StateUtil.cacheConversation(webContext);
+			StateUtil.commitAndCacheConversation(webContext);
 			webId = webContext.getWebId();
 			return this;
 		}

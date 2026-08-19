@@ -65,13 +65,13 @@ import org.skyve.impl.metadata.view.widget.bound.tabular.TreeGrid;
 import org.skyve.impl.web.AbstractWebContext;
 import org.skyve.impl.web.content.ContentMediaClassifier.ContentMediaKind;
 import org.skyve.metadata.model.Persistent;
+import org.skyve.metadata.user.User;
 import org.skyve.metadata.view.Disableable;
 import org.skyve.metadata.view.Invisible;
 import org.skyve.metadata.view.TextOutput.Sanitisation;
 import org.skyve.metadata.view.View.ViewType;
 import org.skyve.metadata.view.widget.FilterParameter;
 import org.skyve.metadata.view.widget.bound.Parameter;
-import org.skyve.metadata.user.User;
 import org.skyve.util.JSON;
 import org.skyve.web.BackgroundTask;
 
@@ -971,7 +971,7 @@ class ViewJSONManipulatorCoreTest {
 		}
 
 		@Override
-		public void cacheConversation() {
+		public void cacheConversationAndCycleTransaction() {
 			// no-op for focused unit tests
 		}
 

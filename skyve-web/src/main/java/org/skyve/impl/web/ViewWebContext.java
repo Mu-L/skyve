@@ -4,6 +4,7 @@ import org.skyve.EXT;
 import org.skyve.domain.Bean;
 import org.skyve.domain.messages.SessionEndedException;
 import org.skyve.impl.cache.StateUtil;
+import org.skyve.impl.persistence.AbstractPersistence;
 import org.skyve.web.BackgroundTask;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,8 +34,13 @@ public abstract class ViewWebContext extends AbstractWebContext {
 	}
 
 	@Override
-	public void cacheConversation() throws Exception {
-		StateUtil.cacheConversation(this);
+	public void cacheConversationAndCycleTransaction() {
+		StateUtil.commitAndCacheConversation(this);
+		// Public action code may continue after caching, so give it a new unit of work.
+		AbstractPersistence p = getConversation();
+		if (p != null) {
+			p.begin();
+		}
 	}
 	
 	/**
@@ -42,11 +48,10 @@ public abstract class ViewWebContext extends AbstractWebContext {
 	 *
 	 * @param taskClass the background task type to execute
 	 * @param <T> the bean type used by the background task
-	 * @throws Exception when caching or scheduling fails
 	 */
 	@Override
-	public <T extends Bean> void background(Class<? extends BackgroundTask<T>> taskClass) throws Exception {
-		cacheConversation();
+	public <T extends Bean> void background(Class<? extends BackgroundTask<T>> taskClass) {
+		cacheConversationAndCycleTransaction();
 		EXT.getJobScheduler().runBackgroundTask(taskClass, getConversation().getUser(), getWebId());
 	}
 
@@ -55,10 +60,9 @@ public abstract class ViewWebContext extends AbstractWebContext {
 	 *
 	 * @param taskClass the background task type to execute
 	 * @param <T> the bean type used by the background task
-	 * @throws Exception when scheduling fails
 	 */
 	@Override
-	public <T extends Bean> void backgroundWithoutCachingConversation(Class<? extends BackgroundTask<T>> taskClass) throws Exception {
+	public <T extends Bean> void backgroundWithoutCachingConversation(Class<? extends BackgroundTask<T>> taskClass) {
 		EXT.getJobScheduler().runBackgroundTask(taskClass, getConversation().getUser(), getWebId());
 	}
 }

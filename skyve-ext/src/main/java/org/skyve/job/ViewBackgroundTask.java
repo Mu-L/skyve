@@ -10,9 +10,9 @@ import org.skyve.impl.persistence.AbstractPersistence;
 import org.skyve.impl.util.UtilImpl;
 import org.skyve.impl.web.AbstractWebContext;
 import org.skyve.metadata.user.User;
+import org.skyve.util.logging.SkyveLoggerFactory;
 import org.skyve.web.BackgroundTask;
 import org.slf4j.Logger;
-import org.skyve.util.logging.SkyveLoggerFactory;
 
 /**
  * This is the default implementation of BackgroundTask integration and serves as the extension point.
@@ -21,13 +21,11 @@ import org.skyve.util.logging.SkyveLoggerFactory;
  * @param <T>	The type of bean the task is operating on - usually the conversation bean.
  */
 public abstract class ViewBackgroundTask<T extends Bean> implements BackgroundTask<T>, org.quartz.Job {
-
     private static final Logger LOGGER = SkyveLoggerFactory.getLogger(ViewBackgroundTask.class);
 
 	private AbstractWebContext webContext;
 	private T bean;
-	private User user;
-	
+
 	/**
 	 * Get the bean for the task.
 	 */
@@ -37,19 +35,18 @@ public abstract class ViewBackgroundTask<T extends Bean> implements BackgroundTa
 	}
 	
 	/**
-	 * Place the conversation backing this task into the conversation cache.
+	 * Commit the transaction, cache the conversation backing this task and begin a new transaction.
 	 */
 	@Override
-	public final void cacheConversation() throws Exception {
-		StateUtil.cacheConversation(webContext);
+	public final void cacheConversationAndCycleTransaction() {
+		StateUtil.commitAndCacheConversation(webContext);
+		
+		// The task may continue after its checkpoint in a new unit of work.
+		AbstractPersistence persistence = webContext.getConversation();
+		if (persistence != null) {
+			persistence.begin();
+		}
 	}
-	
-	/**
-	 * Override this to do whatever is required in this task.
-	 * @param bean	The same bean returned by getBean() for convenience.
-	 */
-	@Override
-	public abstract void execute(@SuppressWarnings("hiding") T bean) throws Exception;
 	
 	/**
 	 * Quartz integration point.
@@ -61,7 +58,7 @@ public abstract class ViewBackgroundTask<T extends Bean> implements BackgroundTa
 		try {
 			JobDataMap map = context.getMergedJobDataMap();
 			String webId = map.getString(AbstractWebContext.CONTEXT_NAME);
-			user = (User) map.get(AbstractSkyveJob.USER_JOB_PARAMETER_KEY);
+			User user = (User) map.get(AbstractSkyveJob.USER_JOB_PARAMETER_KEY);
 			webContext = StateUtil.getCachedConversation(webId, null);
 			@SuppressWarnings("unchecked")
 			T t = (T) webContext.getNullableCurrentBean();

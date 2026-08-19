@@ -1437,7 +1437,7 @@ class UploadViewsStateTest {
 			UtilImpl.CONVERSATION_CACHE = new ConversationCacheConfig(100, 10);
 			DefaultCaching.get().shutdown();
 			DefaultCaching.get().startup();
-			StateUtil.cacheConversation(webContext);
+			StateUtil.commitAndCacheConversation(webContext);
 			setField(AbstractUploadView.class, view, "context", webContext.getWebId());
 			bindPersistenceToThread(persistence);
 
@@ -1511,7 +1511,7 @@ class UploadViewsStateTest {
 			UtilImpl.CONVERSATION_CACHE = new ConversationCacheConfig(100, 10);
 			DefaultCaching.get().shutdown();
 			DefaultCaching.get().startup();
-			StateUtil.cacheConversation(webContext);
+			StateUtil.commitAndCacheConversation(webContext);
 			setField(AbstractUploadView.class, view, "context", webContext.getWebId());
 			view.postConstruct();
 			setField(AbstractUploadView.class, view, "canAccess", Boolean.TRUE);
