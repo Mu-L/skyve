@@ -63,7 +63,8 @@ public class GenerateDomainMojo extends AbstractSkyveMojo {
 		try {
 			configureClasspath(srcDir);
 				registerCustomisations(generateDomainConfig.getCustomisationsClass());
-				generateDomain(generateDomainConfig.isDebug(),
+				generateDomain(generateDomainConfig.isValidate(),
+								generateDomainConfig.isDebug(),
 								generateDomainConfig.isMultiTenant(),
 								DialectOptions.valueOf(generateDomainConfig.getDialect()),
 								srcDir,
@@ -84,7 +85,8 @@ public class GenerateDomainMojo extends AbstractSkyveMojo {
 	}
 
 	@SuppressWarnings({"static-method", "java:S107"}) // test seam
-	void generateDomain(boolean debug,
+	void generateDomain(boolean validate,
+							boolean debug,
 							boolean multiTenant,
 							DialectOptions dialect,
 							String sourceDirectory,
@@ -93,7 +95,8 @@ public class GenerateDomainMojo extends AbstractSkyveMojo {
 							String generatedTestDirectory,
 							String[] excludedModules)
 	throws Exception {
-		DomainGenerator.generate(debug,
+		DomainGenerator.generate(validate,
+									debug,
 									multiTenant,
 									dialect,
 									sourceDirectory,

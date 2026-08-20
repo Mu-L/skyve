@@ -38,6 +38,7 @@ class MojoExecutionSuccessTest {
 		GenerateDomainConfig config = new GenerateDomainConfig();
 		config.setDebug(true);
 		config.setMultiTenant(true);
+		config.setValidate(false);
 		config.setDialect("POSTGRESQL");
 		config.setExcludedModules("admin,test");
 		config.setCustomisationsClass("com.example.Customisations");
@@ -54,6 +55,7 @@ class MojoExecutionSuccessTest {
 		assertEquals("com.example.Customisations", mojo.customisationsClassName);
 		assertTrue(mojo.debug);
 		assertTrue(mojo.multiTenant);
+		assertFalse(mojo.validate);
 		assertEquals(DialectOptions.POSTGRESQL, mojo.dialect);
 		assertEquals("src", mojo.sourceDirectory);
 		assertEquals("generated", mojo.generatedDirectory);
@@ -254,6 +256,7 @@ class MojoExecutionSuccessTest {
 		private String customisationsClassName;
 		private boolean debug;
 		private boolean multiTenant;
+		private boolean validate;
 		private DialectOptions dialect;
 		private String sourceDirectory;
 		private String generatedDirectory;
@@ -273,7 +276,8 @@ class MojoExecutionSuccessTest {
 		}
 
 		@Override
-		void generateDomain(boolean debugValue,
+		void generateDomain(boolean validateValue,
+								boolean debugValue,
 								boolean multiTenantValue,
 								DialectOptions dialectValue,
 								String sourceDirectoryValue,
@@ -281,6 +285,7 @@ class MojoExecutionSuccessTest {
 								String testDirectoryValue,
 								String generatedTestDirectoryValue,
 								String[] excludedModulesValue) {
+			this.validate = validateValue;
 			this.debug = debugValue;
 			this.multiTenant = multiTenantValue;
 			this.dialect = dialectValue;

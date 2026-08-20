@@ -20,6 +20,13 @@ public class GenerateDomainConfig {
 	private boolean multiTenant = false;
 
 	/**
+	 * Metadata validation switch. Disable only to bootstrap generated classes that are required by
+	 * handwritten metadata implementations, then compile and regenerate with validation enabled.
+	 */
+	@Parameter(required = true, defaultValue = "true")
+	private boolean validate = true;
+
+	/**
 	 * Dialect options.
 	 */
 	@Parameter(required = true, defaultValue = "H2")
@@ -77,6 +84,24 @@ public class GenerateDomainConfig {
 	 */
 	public void setMultiTenant(boolean multiTenant) {
 		this.multiTenant = multiTenant;
+	}
+
+	/**
+	 * Returns whether metadata should be validated before domain generation.
+	 *
+	 * @return {@code true} when metadata validation is enabled
+	 */
+	public boolean isValidate() {
+		return validate;
+	}
+
+	/**
+	 * Sets whether metadata should be validated before domain generation.
+	 *
+	 * @param validate whether metadata validation is enabled
+	 */
+	public void setValidate(boolean validate) {
+		this.validate = validate;
 	}
 
 	/**
