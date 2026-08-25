@@ -6,6 +6,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -26,6 +27,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.quartz.CronScheduleBuilder;
+import org.quartz.CronTrigger;
 import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
 import org.quartz.JobDetail;
@@ -58,6 +60,12 @@ import org.skyve.metadata.module.Module;
 import org.skyve.metadata.repository.ProvidedRepository;
 import org.skyve.metadata.user.User;
 
+/**
+ * Verifies Quartz job construction, validation and scheduling through Skyve's scheduler facade.
+ *
+ * <p>Content garbage-collection coverage confirms both an immediate manual trigger and registration
+ * of the internal cron job with its stable job identity and configured cron expression.
+ */
 @SuppressWarnings({"static-method", "boxing"})
 public class QuartzJobSchedulerTest {
 	private Scheduler originalScheduler;
@@ -177,6 +185,7 @@ public class QuartzJobSchedulerTest {
 				() -> quartzJobScheduler.runBackgroundTask(TestBackgroundTask.class, currentUser, "web-1"));
 	}
 
+	/** Confirms that a manual collection request schedules the production garbage-collection job. */
 	@Test
 	public void runContentGarbageCollectorSchedulesInternalJob() throws Exception {
 		new QuartzJobScheduler().runContentGarbageCollector();
@@ -188,12 +197,37 @@ public class QuartzJobSchedulerTest {
 		assertThat(trigger.getValue().getKey().getGroup(), is("INTERNAL"));
 	}
 
+	/** Confirms that Quartz failures from a manual collection request are exposed as domain failures. */
 	@Test
 	public void runContentGarbageCollectorWrapsSchedulerException() throws Exception {
 		doThrow(new SchedulerException("boom")).when(scheduler).scheduleJob(any(org.quartz.JobDetail.class), any(Trigger.class));
 		QuartzJobScheduler quartzJobScheduler = new QuartzJobScheduler();
 
 		assertThrows(DomainException.class, quartzJobScheduler::runContentGarbageCollector);
+	}
+
+	/** Confirms that startup registers garbage collection with the configured internal cron trigger. */
+	@Test
+	public void scheduleInternalJobsRegistersContentGarbageCollectorCronTrigger() throws Exception {
+		Method method = QuartzJobScheduler.class.getDeclaredMethod("scheduleInternalJobs");
+		method.setAccessible(true);
+
+		method.invoke(null);
+
+		ArgumentCaptor<JobDetail> details = ArgumentCaptor.forClass(JobDetail.class);
+		ArgumentCaptor<Trigger> triggers = ArgumentCaptor.forClass(Trigger.class);
+		verify(scheduler, atLeast(3)).scheduleJob(details.capture(), triggers.capture());
+		for (int i = 0; i < details.getAllValues().size(); i++) {
+			JobDetail detail = details.getAllValues().get(i);
+			if (ContentGarbageCollectionJob.class.equals(detail.getJobClass())) {
+				Trigger trigger = triggers.getAllValues().get(i);
+				assertThat(detail.getKey(), is(new JobKey("CMS Garbage Collection", "INTERNAL")));
+				assertThat(trigger.getKey(), is(new TriggerKey("CMS Garbage Collection Trigger", "INTERNAL")));
+				assertThat(((CronTrigger) trigger).getCronExpression(), is(UtilImpl.CONTENT_GC_CRON));
+				return;
+			}
+		}
+		throw new AssertionError("Content garbage collection job was not scheduled");
 	}
 
 	@Test

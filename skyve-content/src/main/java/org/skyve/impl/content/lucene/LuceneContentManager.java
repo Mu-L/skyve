@@ -12,7 +12,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -76,17 +78,29 @@ import org.slf4j.Logger;
  */
 public class LuceneContentManager extends FileSystemContentManager {
 	static final char BEAN_CONTENT_SUFFIX = '~';
-	
-    private static final Logger CONTENT_LOGGER = Category.CONTENT.logger();
+	private static final FieldType CONTENT_ID_FIELD_TYPE;
 
+	static {
+		CONTENT_ID_FIELD_TYPE = new FieldType(StringField.TYPE_STORED);
+		// FieldExistsQuery uses norms to distinguish attachments from bean content.
+		CONTENT_ID_FIELD_TYPE.setOmitNorms(false);
+		CONTENT_ID_FIELD_TYPE.freeze();
+	}
+
+	private static final Logger CONTENT_LOGGER = Category.CONTENT.logger();
+
+	@SuppressWarnings("resource") // Closed by shutdown(); shared with each manager instance.
 	private static Directory directory;
+	@SuppressWarnings("resource") // Closed by shutdown(); shared with each manager instance.
 	private static Analyzer analyzer;
+	@SuppressWarnings("resource") // Closed by shutdown(); shared with each manager instance.
 	private static IndexWriter writer;
 	
 	/**
 	 * Opens Lucene index resources and prepares an index writer.
 	 */
 	@Override
+	@SuppressWarnings({"resource", "java:S2696"}) // Ownership is transferred to the lifecycle-managed static fields.
 	public void startup() {
 		try {
 			directory = FSDirectory.open(Paths.get(UtilImpl.CONTENT_DIRECTORY, CLUSTER_NAME));
@@ -107,6 +121,7 @@ public class LuceneContentManager extends FileSystemContentManager {
 	 * @throws IllegalStateException if Lucene resources cannot be closed cleanly
 	 */
 	@Override
+	@SuppressWarnings("java:S2696") // Ownership is transferred to the lifecycle-managed static fields.
 	public void shutdown() {
 		try {
 			try {
@@ -285,9 +300,7 @@ public class LuceneContentManager extends FileSystemContentManager {
 		// Doc as binary attachment, inlined
 		if (! UtilImpl.CONTENT_FILE_STORAGE) {
 			byte[] bytes = attachment.getContentBytes();
-			if (bytes != null) {
-				document.add(new StoredField(ATTACHMENT, bytes));
-			}
+			document.add(new StoredField(ATTACHMENT, bytes));
 			String markup = attachment.getMarkup();
 			if (markup != null) {
 				document.add(new StoredField(MARKUP, markup));
@@ -330,9 +343,7 @@ public class LuceneContentManager extends FileSystemContentManager {
 		}
 		document.add(new StringField(Bean.DOCUMENT_ID, bizId, Store.YES));
 		String attributeName = attachment.getAttributeName();
-		if (attributeName != null) {
-			document.add(new StoredField(ATTRIBUTE_NAME, attributeName));
-		}
+		document.add(new StoredField(ATTRIBUTE_NAME, attributeName));
 
 		// Add file attributes
 		String fileName = attachment.getFileName();
@@ -344,7 +355,7 @@ public class LuceneContentManager extends FileSystemContentManager {
 		if (UtilImpl.CONTENT_TRACE) CONTENT_LOGGER.info("LuceneContentManager.put(): {}", bizId);
 		String contentId = attachment.getContentId();
 		// Even if existing, add the content ID to the document as it could be a re-index
-		document.add(new TextField(CONTENT_ID, contentId, Store.YES));
+		document.add(new Field(CONTENT_ID, contentId, CONTENT_ID_FIELD_TYPE));
 		// delete if exists and re-add
 		writer.updateDocument(new Term(CONTENT_ID, contentId), document);
 	}
