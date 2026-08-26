@@ -35,17 +35,20 @@ public class DataStore {
 	private int oltpConnectionTimeoutInSeconds = 0;
 	// Timeout for data store connections employed when running jobs and background tasks 
 	private int asyncConnectionTimeoutInSeconds = 0;
-		/**
+
+	/**
 	 * Constructs a JNDI data-source-backed data store with no connection timeout.
 	 *
 	 * @param jndiDataSourceName the JNDI name of the container-managed data source;
 	 *                           must not be {@code null}
 	 * @param dialectClassName   the fully qualified Hibernate Dialect class name;
 	 *                           must not be {@code null}
-	 */	public DataStore(String jndiDataSourceName,
+	 */
+	public DataStore(String jndiDataSourceName,
 						String dialectClassName) {
 		this(jndiDataSourceName, dialectClassName, 0, 0);
 	}
+	
 	/**
 	 * Constructs a JNDI data-source-backed data store with explicit connection timeouts.
 	 *
@@ -77,6 +80,7 @@ public class DataStore {
 	public DataStore(String jdbcDriverClassName, String jdbcUrl, String dialectClassName) {
 		this(jdbcDriverClassName, jdbcUrl, dialectClassName, 0, 0);
 	}
+	
 	/**
 	 * Constructs a JDBC-driver-backed data store with no authentication but with explicit timeouts.
 	 *
@@ -92,6 +96,7 @@ public class DataStore {
 						int asyncConnectionTimeoutInSeconds) {
 		this(jdbcDriverClassName, jdbcUrl, null, null, dialectClassName, oltpConnectionTimeoutInSeconds, asyncConnectionTimeoutInSeconds);
 	}
+	 
 	/**
 	 * Constructs a JDBC-driver-backed data store with explicit credentials and no timeout.
 	 *
@@ -107,6 +112,7 @@ public class DataStore {
 						String dialectClassName) {
 		this(jdbcDriverClassName, jdbcUrl, userName, password, dialectClassName, 0, 0);
 	}
+	
 	/**
 	 * Constructs a JDBC-driver-backed data store with explicit credentials and timeouts.
 	 *
@@ -117,7 +123,8 @@ public class DataStore {
 	 * @param dialectClassName                  the fully qualified Hibernate Dialect class name; must not be {@code null}
 	 * @param oltpConnectionTimeoutInSeconds    timeout for UI/forms connections in seconds; {@code 0} means no timeout
 	 * @param asyncConnectionTimeoutInSeconds   timeout for background-job connections in seconds; {@code 0} means no timeout
-	 */	public DataStore(String jdbcDriverClassName, 
+	 */
+	 public DataStore(String jdbcDriverClassName, 
 						String jdbcUrl,
 						String userName,
 						String password,
