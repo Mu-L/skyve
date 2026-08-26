@@ -35,7 +35,7 @@ import org.skyve.impl.backup.RestoreOptions.IndexingOption;
 import org.skyve.impl.backup.RestoreOptions.PreProcess;
 import org.skyve.impl.content.AbstractContentManager;
 import org.skyve.impl.metadata.customer.CustomerImpl;
-import org.skyve.impl.metadata.model.document.field.Field.IndexType;
+import org.skyve.impl.metadata.model.document.field.Content;
 import org.skyve.impl.persistence.hibernate.AbstractHibernatePersistence;
 import org.skyve.impl.persistence.hibernate.dialect.SkyveDialect;
 import org.skyve.impl.util.UtilImpl;
@@ -484,10 +484,7 @@ public class RestoreJob extends CancellableJob {
 											}
 										}
 										else {
-											IndexType indexType = table.indexes.get(header);
-											boolean textIndex = (indexType == null) ||
-																	IndexType.textual.equals(indexType) ||
-																	IndexType.both.equals(indexType);
+											boolean textIndex = Content.isTextuallyIndexed(table.indexes.get(header));
 											if (textIndex) {
 												textIndex = IndexingOption.both.equals(indexingOption) ||
 																IndexingOption.content.equals(indexingOption);

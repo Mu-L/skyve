@@ -11,7 +11,7 @@ import org.skyve.EXT;
 import org.skyve.content.AttachmentContent;
 import org.skyve.content.ContentManager;
 import org.skyve.impl.content.AbstractContentManager;
-import org.skyve.impl.metadata.model.document.field.Field.IndexType;
+import org.skyve.impl.metadata.model.document.field.Content;
 import org.skyve.job.CancellableJob;
 import org.skyve.metadata.model.Attribute.AttributeType;
 
@@ -85,10 +85,7 @@ public class ReindexAttachmentsJob extends CancellableJob {
 													LOGGER.error(trace);
 												}
 												else {
-													IndexType indexType = table.indexes.get(name);
-													boolean index = ((indexType == null) || 
-																		IndexType.textual.equals(indexType) ||
-																		IndexType.both.equals(indexType));
+													boolean index = Content.isTextuallyIndexed(table.indexes.get(name));
 													acm.reindex(content, index);
 												}
 											}

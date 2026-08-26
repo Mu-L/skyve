@@ -114,6 +114,30 @@ public class ReindexAttachmentsJobExecuteTest {
 	}
 
 	@Test
+	public void executeIndexesAttachmentWhenFieldIndexTypeIsUndefined() throws Exception {
+		Connection connection = mock(Connection.class);
+		Statement statement = mock(Statement.class);
+		ResultSet resultSet = mock(ResultSet.class);
+		AbstractContentManager truncateCm = mock(AbstractContentManager.class);
+		AbstractContentManager scanCm = mock(AbstractContentManager.class);
+		AttachmentContent attachment = mock(AttachmentContent.class);
+		Table table = new Table("agnostic", "ADM_CONTENT");
+		table.fields.put("file", new BackupField(AttributeType.content, org.skyve.metadata.model.Attribute.Sensitivity.none));
+
+		when(connection.createStatement()).thenReturn(statement);
+		when(statement.getResultSet()).thenReturn(resultSet);
+		when(resultSet.next()).thenReturn(Boolean.TRUE, Boolean.FALSE);
+		when(resultSet.getString("file")).thenReturn("cid-default");
+		when(resultSet.wasNull()).thenReturn(Boolean.FALSE);
+		when(scanCm.getAttachment("cid-default")).thenReturn(attachment);
+
+		TestableReindexAttachmentsJob job = new TestableReindexAttachmentsJob("demo", connection, List.of(table), truncateCm, scanCm);
+		job.execute();
+
+		verify(scanCm).reindex(attachment, true);
+	}
+
+	@Test
 	public void executeProcessesMultipleContentTablesAndSkipsMixedNonContentTable() throws Exception {
 		Connection connection = mock(Connection.class);
 		Statement firstStatement = mock(Statement.class);

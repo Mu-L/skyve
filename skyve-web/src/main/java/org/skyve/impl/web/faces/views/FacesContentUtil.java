@@ -11,7 +11,6 @@ import org.skyve.domain.Bean;
 import org.skyve.domain.messages.SecurityException;
 import org.skyve.impl.bind.BindUtil;
 import org.skyve.impl.metadata.model.document.field.Content;
-import org.skyve.impl.metadata.model.document.field.Field.IndexType;
 import org.skyve.metadata.customer.Customer;
 import org.skyve.metadata.model.Attribute;
 import org.skyve.metadata.model.document.Document;
@@ -225,10 +224,7 @@ public class FacesContentUtil {
 			TargetMetaData target = Binder.getMetaDataForBinding(customer, module, document, contentAttributeName);
 			Attribute attribute = target.getAttribute();
 			if (attribute instanceof Content c) {
-				IndexType indexType = c.getIndex();
-				index = ((indexType == null) || 
-							IndexType.textual.equals(indexType) ||
-							IndexType.both.equals(indexType));
+				index = Content.isTextuallyIndexed(c.getIndex());
 			}
 
 			// NB Don't set the content id as we always want a new one

@@ -13,7 +13,6 @@ import org.skyve.domain.messages.SecurityException;
 import org.skyve.impl.bind.BindUtil;
 import org.skyve.impl.cache.StateUtil;
 import org.skyve.impl.metadata.model.document.field.Content;
-import org.skyve.impl.metadata.model.document.field.Field.IndexType;
 import org.skyve.impl.util.ImageUtil;
 import org.skyve.impl.util.UtilImpl;
 import org.skyve.impl.web.AbstractWebContext;
@@ -368,8 +367,7 @@ public class ImageMarkupView extends LocalisableView {
 							Document contentDocument = contentModule.getDocument(customer, contentBizDocument);
 							Attribute attribute = contentDocument.getAttribute(contentAttributeName);
 							if (attribute instanceof Content contentAttribute) {
-								IndexType indexType = contentAttribute.getIndex();
-								index = (IndexType.textual.equals(indexType) || IndexType.both.equals(indexType));
+								index = Content.isTextuallyIndexed(contentAttribute.getIndex());
 							}
 							else {
 								LOGGER.warn("Could not determine whether to index the new marked up content as the attribute {}.{}.{} is not a content attribute.",

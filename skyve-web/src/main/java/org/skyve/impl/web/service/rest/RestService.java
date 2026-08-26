@@ -14,9 +14,11 @@ import org.skyve.domain.PersistentBean;
 import org.skyve.domain.messages.NoResultsException;
 import org.skyve.domain.messages.SecurityException;
 import org.skyve.impl.bind.BindUtil;
+import org.skyve.impl.metadata.model.document.field.Content;
 import org.skyve.impl.web.WebErrorUtil;
 import org.skyve.impl.web.filter.rest.AbstractRestFilter;
 import org.skyve.metadata.customer.Customer;
+import org.skyve.metadata.model.Attribute;
 import org.skyve.metadata.model.document.Document;
 import org.skyve.metadata.module.Module;
 import org.skyve.metadata.module.query.MetaDataQueryDefinition;
@@ -551,8 +553,17 @@ public class RestService {
 																			u.getId(),
 																			id,
 																			attributeName)
-															.attachment(contentType, base64Codec.decode(encodedContent));
-				cm.put(content);
+												.attachment(contentType, base64Codec.decode(encodedContent));
+				Customer metadataCustomer = u.getCustomer();
+				Module metadataModule = metadataCustomer.getModule(module);
+				Document metadataDocument = metadataModule.getDocument(metadataCustomer, document);
+				Attribute attribute = Binder.getMetaDataForBinding(metadataCustomer,
+																	metadataModule,
+																	metadataDocument,
+																	attributeName).getAttribute();
+				boolean index = ! (attribute instanceof Content contentAttribute) ||
+								Content.isTextuallyIndexed(contentAttribute.getIndex());
+				cm.put(content, index);
 				BindUtil.set(bean, attributeName, content.getContentId());
 				CORE.getPersistence().save(bean);
 

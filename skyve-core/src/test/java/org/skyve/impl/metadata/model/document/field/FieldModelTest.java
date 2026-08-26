@@ -144,6 +144,15 @@ class FieldModelTest {
 	}
 
 	@Test
+	void contentTextualIndexingUsesContentDefaultAndExplicitIndexTypes() {
+		assertTrue(Content.isTextuallyIndexed(null));
+		assertTrue(Content.isTextuallyIndexed(IndexType.textual));
+		assertTrue(Content.isTextuallyIndexed(IndexType.both));
+		assertFalse(Content.isTextuallyIndexed(IndexType.database));
+		assertFalse(Content.isTextuallyIndexed(IndexType.none));
+	}
+
+	@Test
 	void fieldDefaultValueNullByDefault() {
 		Text field = new Text();
 		assertThat(field.getDefaultValue(), nullValue());
@@ -265,4 +274,3 @@ class FieldModelTest {
 		assertThat(new Id().getDomainType(), nullValue());
 	}
 }
-
