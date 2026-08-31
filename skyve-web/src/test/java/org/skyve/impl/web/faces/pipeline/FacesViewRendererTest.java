@@ -21,6 +21,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -42,6 +43,8 @@ import org.skyve.impl.metadata.view.RelativeSize;
 import org.skyve.impl.metadata.view.ViewImpl;
 import org.skyve.impl.metadata.view.container.Collapsible;
 import org.skyve.impl.metadata.view.container.VBox;
+import org.skyve.impl.metadata.view.container.form.Form;
+import org.skyve.impl.metadata.view.container.form.FormColumn;
 import org.skyve.impl.metadata.view.reference.EditViewReference;
 import org.skyve.impl.metadata.view.widget.Blurb;
 import org.skyve.impl.metadata.view.widget.Chart;
@@ -55,6 +58,8 @@ import org.skyve.impl.metadata.view.widget.bound.input.CheckBox;
 import org.skyve.impl.metadata.view.widget.bound.input.ListMembership;
 import org.skyve.impl.metadata.view.widget.bound.input.LookupDescription;
 import org.skyve.impl.metadata.view.widget.bound.input.TextField;
+import org.skyve.impl.metadata.view.widget.bound.tabular.DataGrid;
+import org.skyve.impl.metadata.view.widget.bound.tabular.DataGridBoundColumn;
 import org.skyve.impl.metadata.view.widget.bound.tabular.ListGrid;
 import org.skyve.impl.metadata.view.widget.bound.tabular.ListRepeater;
 import org.skyve.impl.sail.mock.MockFacesContext;
@@ -74,7 +79,7 @@ import jakarta.faces.component.UIComponentBase;
 import jakarta.faces.component.html.HtmlPanelGroup;
 import jakarta.faces.context.FacesContext;
 
-@SuppressWarnings("static-method")
+@SuppressWarnings({"static-method", "java:S5960"}) // Assertions belong in this test class.
 class FacesViewRendererTest {
 	private static final ResolvedIcon NO_ICON = new ResolvedIcon(null, null);
 
@@ -99,7 +104,7 @@ class FacesViewRendererTest {
 	}
 
 	public static final class TestVueListGridBuilder extends NoOpComponentBuilder {
-		private static String lastStickyHeaderAnchorSelector;
+		private static final AtomicReference<String> LAST_STICKY_HEADER_ANCHOR_SELECTOR = new AtomicReference<>();
 
 		@Override
 		public UIComponent listGrid(UIComponent component,
@@ -112,7 +117,7 @@ class FacesViewRendererTest {
 										ListGrid grid,
 										String stickyHeaderAnchorSelector,
 										boolean aggregateQuery) {
-			lastStickyHeaderAnchorSelector = stickyHeaderAnchorSelector;
+			LAST_STICKY_HEADER_ANCHOR_SELECTOR.set(stickyHeaderAnchorSelector);
 			return new HtmlPanelGroup();
 		}
 	}
@@ -212,6 +217,19 @@ class FacesViewRendererTest {
 		renderer.getCurrentContainers().push(view);
 		renderer.renderListGrid(null, false, grid);
 
+		ArgumentCaptor<String> stickyHeaderAnchorSelector = ArgumentCaptor.forClass(String.class);
+		verify(cb).listGrid(isNull(),
+								eq("testModule"),
+								isNull(),
+								isNull(),
+								eq("external"),
+								isNull(),
+								any(),
+								same(grid),
+								stickyHeaderAnchorSelector.capture(),
+								eq(false));
+		assertEquals(FacesViewRenderer.DEFAULT_STICKY_HEADER_ANCHOR_SELECTOR,
+				stickyHeaderAnchorSelector.getValue());
 	}
 
 	@Test
@@ -265,20 +283,21 @@ class FacesViewRendererTest {
 		FacesViewRenderer listRenderer = newRenderer(listView, null, cb, lb);
 		listRenderer.renderView(NO_ICON);
 		listRenderer.getCurrentContainers().push(listView);
-		TestVueListGridBuilder.lastStickyHeaderAnchorSelector = null;
+		TestVueListGridBuilder.LAST_STICKY_HEADER_ANCHOR_SELECTOR.set(null);
 		listRenderer.renderListGrid(null, false, grid);
 
 		assertEquals(FacesViewRenderer.DEFAULT_STICKY_HEADER_ANCHOR_SELECTOR,
-				TestVueListGridBuilder.lastStickyHeaderAnchorSelector);
+				TestVueListGridBuilder.LAST_STICKY_HEADER_ANCHOR_SELECTOR.get());
 
 		ViewImpl editView = createView(null);
 		FacesViewRenderer editRenderer = newRenderer(editView, null, cb, lb);
 		editRenderer.renderView(NO_ICON);
 		editRenderer.getCurrentContainers().push(editView);
-		TestVueListGridBuilder.lastStickyHeaderAnchorSelector = FacesViewRenderer.DEFAULT_STICKY_HEADER_ANCHOR_SELECTOR;
+		TestVueListGridBuilder.LAST_STICKY_HEADER_ANCHOR_SELECTOR.set(
+				FacesViewRenderer.DEFAULT_STICKY_HEADER_ANCHOR_SELECTOR);
 		editRenderer.renderListGrid(null, false, grid);
 
-		assertNull(TestVueListGridBuilder.lastStickyHeaderAnchorSelector);
+		assertNull(TestVueListGridBuilder.LAST_STICKY_HEADER_ANCHOR_SELECTOR.get());
 	}
 
 	@Test
@@ -444,6 +463,68 @@ class FacesViewRendererTest {
 		ArgumentCaptor<String> message = ArgumentCaptor.forClass(String.class);
 		verify(cb).checkBox(isNull(), isNull(), same(checkBox), isNull(), eq("Name"), message.capture());
 		assertEquals("<b>Name required</b>", message.getValue());
+	}
+
+	@Test
+	void renderInlineDataGridInputInheritsGridDisabledCondition() throws ReflectiveOperationException {
+		ComponentBuilder cb = mock(ComponentBuilder.class);
+		LayoutBuilder lb = mock(LayoutBuilder.class);
+		FacesViewRenderer renderer = newRenderer(createView(null), null, cb, lb);
+		DataGrid grid = new DataGrid();
+		grid.setInline(Boolean.TRUE);
+		grid.setDisabledConditionName("gridLocked");
+		CheckBox checkBox = new CheckBox();
+		TestComponent component = new TestComponent("checkbox");
+		when(cb.checkBox(any(), isNull(), same(checkBox), eq("gridLocked"), isNull(), isNull()))
+				.thenReturn(new EventSourceComponent(component, component));
+		setViewRendererField(renderer, "currentDataWidget", grid);
+		setViewRendererField(renderer, "currentBoundColumn", new DataGridBoundColumn());
+		setFacesRendererField(renderer, "current", new TestComponent("column"));
+
+		renderer.renderBoundColumnCheckBox(checkBox);
+
+		verify(cb).checkBox(isNull(), isNull(), same(checkBox), eq("gridLocked"), isNull(), isNull());
+	}
+
+	@Test
+	void renderFormInputInheritsFormDisabledCondition() throws ReflectiveOperationException {
+		ComponentBuilder cb = mock(ComponentBuilder.class);
+		LayoutBuilder lb = mock(LayoutBuilder.class);
+		FacesViewRenderer renderer = newRenderer(createView(null), null, cb, lb);
+		Form form = new Form();
+		form.setDisabledConditionName("formLocked");
+		form.getColumns().add(new FormColumn());
+		CheckBox checkBox = new CheckBox();
+		TestComponent component = new TestComponent("checkbox");
+		when(cb.checkBox(any(), isNull(), same(checkBox), eq("formLocked"), isNull(), isNull()))
+				.thenReturn(new EventSourceComponent(component, component));
+		setViewRendererField(renderer, "currentForm", form);
+		setFacesRendererField(renderer, "current", new TestComponent("form"));
+
+		renderer.renderFormCheckBox(checkBox);
+
+		verify(cb).checkBox(isNull(), isNull(), same(checkBox), eq("formLocked"), isNull(), isNull());
+	}
+
+	@Test
+	void renderNonInlineDataGridInputDoesNotInheritGridDisabledCondition() throws ReflectiveOperationException {
+		ComponentBuilder cb = mock(ComponentBuilder.class);
+		LayoutBuilder lb = mock(LayoutBuilder.class);
+		FacesViewRenderer renderer = newRenderer(createView(null), null, cb, lb);
+		DataGrid grid = new DataGrid();
+		grid.setInline(Boolean.FALSE);
+		grid.setDisabledConditionName("gridLocked");
+		CheckBox checkBox = new CheckBox();
+		TestComponent component = new TestComponent("checkbox");
+		when(cb.checkBox(any(), isNull(), same(checkBox), isNull(), isNull(), isNull()))
+				.thenReturn(new EventSourceComponent(component, component));
+		setViewRendererField(renderer, "currentDataWidget", grid);
+		setViewRendererField(renderer, "currentBoundColumn", new DataGridBoundColumn());
+		setFacesRendererField(renderer, "current", new TestComponent("column"));
+
+		renderer.renderBoundColumnCheckBox(checkBox);
+
+		verify(cb).checkBox(isNull(), isNull(), same(checkBox), isNull(), isNull(), isNull());
 	}
 
 	@Test
@@ -898,8 +979,9 @@ class FacesViewRendererTest {
 		return new FacesViewRenderer(user, module, document, view, "external", widgetId, cb, lb);
 	}
 
+	@SuppressWarnings("java:S3011") // Test-only reflection invokes a private converter.
 	private static jakarta.faces.convert.Converter<?> convertConverter(Converter<?> converter, AttributeType type)
-	throws Exception {
+	throws ReflectiveOperationException {
 		Method method = FacesViewRenderer.class.getDeclaredMethod("convertConverter", Converter.class, AttributeType.class);
 		method.setAccessible(true);
 		try {
@@ -907,21 +989,36 @@ class FacesViewRendererTest {
 		}
 		catch (InvocationTargetException e) {
 			Throwable cause = e.getCause();
-			if (cause instanceof Exception exception) {
+			if (cause instanceof RuntimeException exception) {
 				throw exception;
 			}
-			throw e;
+			if (cause instanceof Error error) {
+				throw error;
+			}
+			throw new ReflectiveOperationException("Private converter invocation failed", cause);
 		}
 	}
 
-	private static void setEventSource(FacesViewRenderer renderer, UIComponentBase eventSource) throws Exception {
+	@SuppressWarnings("java:S3011") // Test-only reflection sets private renderer state.
+	private static void setEventSource(FacesViewRenderer renderer, UIComponentBase eventSource)
+	throws ReflectiveOperationException {
 		Field field = FacesViewRenderer.class.getDeclaredField("eventSource");
 		field.setAccessible(true);
 		field.set(renderer, eventSource);
 	}
 
-	private static void setViewRendererField(FacesViewRenderer renderer, String fieldName, Object value) throws Exception {
+	@SuppressWarnings("java:S3011") // Test-only reflection sets private renderer state.
+	private static void setViewRendererField(FacesViewRenderer renderer, String fieldName, Object value)
+	throws ReflectiveOperationException {
 		Field field = ViewRenderer.class.getDeclaredField(fieldName);
+		field.setAccessible(true);
+		field.set(renderer, value);
+	}
+
+	@SuppressWarnings("java:S3011") // Test-only reflection sets private renderer state.
+	private static void setFacesRendererField(FacesViewRenderer renderer, String fieldName, Object value)
+	throws ReflectiveOperationException {
+		Field field = FacesViewRenderer.class.getDeclaredField(fieldName);
 		field.setAccessible(true);
 		field.set(renderer, value);
 	}
@@ -931,9 +1028,10 @@ class FacesViewRendererTest {
 	 *
 	 * @param size metadata object that owns a rendered border title
 	 * @return the resolved nullable escape flag
-	 * @throws Exception if the resolver cannot be invoked
+	 * @throws ReflectiveOperationException if the resolver cannot be invoked
 	 */
-	private static Boolean resolveBorderTitleEscape(RelativeSize size) throws Exception {
+	@SuppressWarnings("java:S3011") // Test-only reflection invokes a private resolver.
+	private static Boolean resolveBorderTitleEscape(RelativeSize size) throws ReflectiveOperationException {
 		Method method = FacesViewRenderer.class.getDeclaredMethod("resolveBorderTitleEscape", RelativeSize.class);
 		method.setAccessible(true);
 		return (Boolean) method.invoke(null, size);

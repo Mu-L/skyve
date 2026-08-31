@@ -655,6 +655,26 @@ public class FacesViewRenderer extends ViewRenderer {
 	}
 
 	/**
+	 * Returns the disabled condition inherited by an input from its containing form or data grid.
+	 *
+	 * @return the inherited disabled condition, or {@code null} when there is none
+	 */
+	private @Nullable String containingDisabledConditionName() {
+		Form currentForm = getCurrentForm();
+		if (currentForm != null) {
+			return currentForm.getDisabledConditionName();
+		}
+
+		AbstractDataWidget dataWidget = getCurrentDataWidget();
+		if ((getCurrentBoundColumn() != null) &&
+				(dataWidget instanceof DataGrid dataGrid) &&
+				Boolean.TRUE.equals(dataGrid.getInline())) {
+			return dataGrid.getDisabledConditionName();
+		}
+		return null;
+	}
+
+	/**
 	 * Returns the current required message prepared for PrimeFaces message channels.
 	 *
 	 * <p>Field, global, and growl message components all read the same JSF
@@ -688,7 +708,6 @@ public class FacesViewRenderer extends ViewRenderer {
 									String confirmationText,
 									Action action,
 									Button button) {
-		Form currentForm = getCurrentForm();
 		renderButton(label,
 						getCurrentWidgetColspan(),
 						iconStyleClass,
@@ -696,7 +715,7 @@ public class FacesViewRenderer extends ViewRenderer {
 						confirmationText,
 						action,
 						button,
-						(currentForm == null) ? null : currentForm.getDisabledConditionName());
+						containingDisabledConditionName());
 	}
 
 	/**
@@ -816,9 +835,7 @@ public class FacesViewRenderer extends ViewRenderer {
 	 */
 	@Override
 	public void renderFormZoomIn(String label, String iconUrl, String iconStyleClass, String toolTip, ZoomIn zoomIn) {
-		Form currentForm = getCurrentForm();
-		String formDisabledConditionName = (currentForm == null) ? null : currentForm.getDisabledConditionName();
-		renderZoomIn(label, getCurrentWidgetColspan(), iconStyleClass, toolTip, zoomIn, formDisabledConditionName);
+		renderZoomIn(label, getCurrentWidgetColspan(), iconStyleClass, toolTip, zoomIn, containingDisabledConditionName());
 	}
 
 	/**
@@ -942,11 +959,10 @@ public class FacesViewRenderer extends ViewRenderer {
 	private void renderGeometry(int formColspan, Geometry geometry) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		EventSourceComponent c = cb.geometry(null,
 												dataWidgetVar,
 												geometry,
-												(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+												containingDisabledConditionName(),
 												title,
 												requiredMessage,
 												CORE.getCustomisations().determineDefaultWidgetTextAlignment(currentUxUi, AttributeType.geometry));
@@ -995,10 +1011,9 @@ public class FacesViewRenderer extends ViewRenderer {
 	public void renderFormGeometryMap(GeometryMap geometry) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		EventSourceComponent c = cb.geometryMap(null,
 													geometry,
-													(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+													containingDisabledConditionName(),
 													title,
 													requiredMessage);
 		eventSource = c.getEventSource();
@@ -1052,11 +1067,10 @@ public class FacesViewRenderer extends ViewRenderer {
 	 * @param button dialog-button metadata
 	 */
 	private void renderDialogButton(String label, int formColspan, DialogButton button) {
-		Form currentForm = getCurrentForm();
 		UIComponent bn = cb.dialogButton(null,
 											EscapableText.of(label, shouldEscape(button.getEscapeDisplayName())),
 											button,
-											(currentForm == null) ? null : currentForm.getDisabledConditionName());
+											containingDisabledConditionName());
 		addComponent(null,
 						formColspan,
 						null,
@@ -1996,11 +2010,10 @@ public class FacesViewRenderer extends ViewRenderer {
 	private void renderCheckBox(int formColspan, CheckBox checkBox) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		EventSourceComponent c = cb.checkBox(null,
 												dataWidgetVar,
 												checkBox,
-												(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+												containingDisabledConditionName(),
 												title,
 												requiredMessage);
 		eventSource = c.getEventSource();
@@ -2091,14 +2104,13 @@ public class FacesViewRenderer extends ViewRenderer {
 	private void renderColourPicker(int formColspan, ColourPicker colour) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		TargetMetaData target = getCurrentTarget();
 		Attribute attribute = (target == null) ? null : target.getAttribute();
 		AttributeType attributeType = (attribute == null) ? AttributeType.colour : attribute.getAttributeType();
 		EventSourceComponent c = cb.colourPicker(null,
 													dataWidgetVar,
 													colour,
-													(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+													containingDisabledConditionName(),
 													title,
 													requiredMessage,
 													CORE.getCustomisations().determineDefaultWidgetTextAlignment(currentUxUi, attributeType));
@@ -2167,11 +2179,10 @@ public class FacesViewRenderer extends ViewRenderer {
 	private void renderCombo(int formColspan, Combo combo) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		EventSourceComponent c = cb.combo(null,
 											dataWidgetVar,
 											combo,
-											(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+											containingDisabledConditionName(),
 											title,
 											requiredMessage);
 		eventSource = c.getEventSource();
@@ -2250,7 +2261,6 @@ public class FacesViewRenderer extends ViewRenderer {
 	private void renderContent(int formColspan, @Nonnull ContentUpload content, boolean formContext) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		TargetMetaData target = getCurrentTarget();
 		Attribute attribute = (target == null) ? null : target.getAttribute();
 		AttributeType attributeType = (attribute == null) ? AttributeType.content : attribute.getAttributeType();
@@ -2259,7 +2269,7 @@ public class FacesViewRenderer extends ViewRenderer {
 		UIComponent c = cb.content(null,
 									dataWidgetVar,
 									content,
-									(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+									containingDisabledConditionName(),
 									title,
 									requiredMessage,
 									CORE.getCustomisations().determineDefaultWidgetTextAlignment(currentUxUi, attributeType),
@@ -2289,7 +2299,6 @@ public class FacesViewRenderer extends ViewRenderer {
 	public void renderFormContentSignature(ContentSignature signature) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		UIComponent c = lb.contentSignatureLayout(null, signature);
 		addComponent(title,
 						getCurrentWidgetColspan(),
@@ -2307,7 +2316,7 @@ public class FacesViewRenderer extends ViewRenderer {
 		cb.addContentSignature(null,
 								c,
 								signature,
-								(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+								containingDisabledConditionName(),
 								title,
 								requiredMessage);
 	}
@@ -2341,11 +2350,10 @@ public class FacesViewRenderer extends ViewRenderer {
 	private void renderHTML(int formColspan, HTML html) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		UIComponent c = cb.html(null,
 									dataWidgetVar,
 									html,
-									(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+									containingDisabledConditionName(),
 									title,
 									requiredMessage);
 		addComponent(title,
@@ -2477,14 +2485,13 @@ public class FacesViewRenderer extends ViewRenderer {
 											LookupDescription lookup) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		TargetMetaData target = getCurrentTarget();
 		Attribute attribute = (target == null) ? null : target.getAttribute();
 		AttributeType attributeType = (attribute == null) ? AttributeType.association : attribute.getAttributeType();
 		EventSourceComponent c = cb.lookupDescription(null,
 														dataWidgetVar,
 														lookup,
-														(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+														containingDisabledConditionName(),
 														title,
 														requiredMessage,
 														CORE.getCustomisations().determineDefaultWidgetTextAlignment(currentUxUi, attributeType),
@@ -2543,14 +2550,13 @@ public class FacesViewRenderer extends ViewRenderer {
 	private void renderPassword(int formColspan, Password password) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		TargetMetaData target = getCurrentTarget();
 		Attribute attribute = (target == null) ? null : target.getAttribute();
 		AttributeType attributeType = (attribute == null) ? AttributeType.text : attribute.getAttributeType();
 		EventSourceComponent c = cb.password(null,
 												dataWidgetVar,
 												password,
-												(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+												containingDisabledConditionName(),
 												title,
 												requiredMessage,
 												(attribute != null) ?
@@ -2595,11 +2601,10 @@ public class FacesViewRenderer extends ViewRenderer {
 	private void renderRadio(int formColspan, Radio radio) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		EventSourceComponent c = cb.radio(null,
 											dataWidgetVar,
 											radio,
-											(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+											containingDisabledConditionName(),
 											title,
 											requiredMessage);
 		eventSource = c.getEventSource();
@@ -2641,11 +2646,10 @@ public class FacesViewRenderer extends ViewRenderer {
 	private void renderRichText(int formColspan, RichText text) {
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		EventSourceComponent c = cb.richText(null,
 												dataWidgetVar,
 												text,
-												(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+												containingDisabledConditionName(),
 												title,
 												requiredMessage);
 		eventSource = c.getEventSource();
@@ -2695,11 +2699,10 @@ public class FacesViewRenderer extends ViewRenderer {
 
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		EventSourceComponent c = cb.slider(null,
 												dataWidgetVar,
 												slider,
-												(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+												containingDisabledConditionName(),
 												title,
 												requiredMessage,
 												convertConverter(converter, type));
@@ -2750,11 +2753,10 @@ public class FacesViewRenderer extends ViewRenderer {
 
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		EventSourceComponent c = cb.spinner(null,
 												dataWidgetVar,
 												spinner,
-												(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+												containingDisabledConditionName(),
 												title,
 												requiredMessage,
 												CORE.getCustomisations().determineDefaultWidgetTextAlignment(currentUxUi, attributeType),
@@ -2806,11 +2808,10 @@ public class FacesViewRenderer extends ViewRenderer {
 
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		EventSourceComponent c = cb.textArea(null,
 												dataWidgetVar,
 												text,
-												(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+												containingDisabledConditionName(),
 												title,
 												requiredMessage,
 												CORE.getCustomisations().determineDefaultWidgetTextAlignment(currentUxUi, attributeType),
@@ -2889,11 +2890,10 @@ public class FacesViewRenderer extends ViewRenderer {
 
 		String title = getCurrentWidgetLabel();
 		String requiredMessage = getPrimeFacesRequiredMessage();
-		Form currentForm = getCurrentForm();
 		EventSourceComponent c = cb.text(null,
 											dataWidgetVar,
 											text,
-											(currentForm == null) ? null : currentForm.getDisabledConditionName(),
+											containingDisabledConditionName(),
 											title,
 											requiredMessage,
 											CORE.getCustomisations().determineDefaultWidgetTextAlignment(currentUxUi, attributeType),

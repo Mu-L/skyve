@@ -13,19 +13,18 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.mockito.ArgumentCaptor;
-
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,62 +35,79 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.primefaces.behavior.ajax.AjaxBehavior;
 import org.primefaces.behavior.confirm.ConfirmBehavior;
-import org.primefaces.component.column.Column;
+import org.primefaces.component.autocomplete.AutoComplete;
+import org.primefaces.component.barchart.BarChart;
 import org.primefaces.component.colorpicker.ColorPicker;
+import org.primefaces.component.column.Column;
 import org.primefaces.component.commandbutton.CommandButton;
 import org.primefaces.component.commandlink.CommandLink;
 import org.primefaces.component.contextmenu.ContextMenu;
 import org.primefaces.component.datatable.DataTable;
 import org.primefaces.component.dialog.Dialog;
+import org.primefaces.component.donutchart.DonutChart;
 import org.primefaces.component.graphicimage.GraphicImage;
 import org.primefaces.component.inputmask.InputMask;
 import org.primefaces.component.inputtext.InputText;
 import org.primefaces.component.inputtextarea.InputTextarea;
+import org.primefaces.component.linechart.LineChart;
 import org.primefaces.component.menubutton.MenuButton;
-import org.primefaces.component.message.Message;
 import org.primefaces.component.menuitem.UIMenuItem;
+import org.primefaces.component.message.Message;
 import org.primefaces.component.outputlabel.OutputLabel;
+import org.primefaces.component.overlaypanel.OverlayPanel;
 import org.primefaces.component.panel.Panel;
-import org.primefaces.component.picklist.PickList;
 import org.primefaces.component.password.Password;
+import org.primefaces.component.picklist.PickList;
+import org.primefaces.component.piechart.PieChart;
+import org.primefaces.component.polarareachart.PolarAreaChart;
+import org.primefaces.component.radarchart.RadarChart;
 import org.primefaces.component.remotecommand.RemoteCommand;
 import org.primefaces.component.selectonemenu.SelectOneMenu;
 import org.primefaces.component.selectoneradio.SelectOneRadio;
 import org.primefaces.component.signature.Signature;
+import org.primefaces.component.spacer.Spacer;
 import org.primefaces.component.spinner.Spinner;
 import org.primefaces.component.tabview.Tab;
 import org.primefaces.component.tabview.TabView;
 import org.primefaces.component.texteditor.TextEditor;
 import org.primefaces.component.toolbar.Toolbar;
 import org.primefaces.component.tristatecheckbox.TriStateCheckbox;
-import org.primefaces.component.autocomplete.AutoComplete;
-import org.skyve.impl.metadata.controller.CustomisationsStaticSingleton;
+import org.primefaces.model.charts.ChartModel;
 import org.skyve.domain.types.converters.Format;
 import org.skyve.domain.types.converters.Format.TextCase;
+import org.skyve.impl.metadata.controller.CustomisationsStaticSingleton;
+import org.skyve.impl.metadata.repository.module.MetaDataQueryContentColumnMetaData.DisplayType;
 import org.skyve.impl.metadata.view.HorizontalAlignment;
 import org.skyve.impl.metadata.view.container.Collapsible;
 import org.skyve.impl.metadata.view.container.Sidebar;
 import org.skyve.impl.metadata.view.container.TabPane;
 import org.skyve.impl.metadata.view.widget.Blurb;
 import org.skyve.impl.metadata.view.widget.Button;
+import org.skyve.impl.metadata.view.widget.Chart;
+import org.skyve.impl.metadata.view.widget.Chart.ChartType;
 import org.skyve.impl.metadata.view.widget.DialogButton;
+import org.skyve.impl.metadata.view.widget.DynamicImage;
 import org.skyve.impl.metadata.view.widget.Link;
+import org.skyve.impl.metadata.view.widget.MapDisplay;
+import org.skyve.impl.metadata.view.widget.StaticImage;
 import org.skyve.impl.metadata.view.widget.bound.Label;
 import org.skyve.impl.metadata.view.widget.bound.ZoomIn;
-import org.skyve.impl.metadata.view.widget.MapDisplay;
 import org.skyve.impl.metadata.view.widget.bound.input.CheckBox;
-import org.skyve.impl.metadata.view.widget.bound.input.ListMembership;
 import org.skyve.impl.metadata.view.widget.bound.input.ColourPicker;
 import org.skyve.impl.metadata.view.widget.bound.input.Combo;
-import org.skyve.impl.metadata.view.widget.bound.input.ContentCapture;
 import org.skyve.impl.metadata.view.widget.bound.input.CompleteType;
+import org.skyve.impl.metadata.view.widget.bound.input.ContentCapture;
 import org.skyve.impl.metadata.view.widget.bound.input.ContentDisplay;
 import org.skyve.impl.metadata.view.widget.bound.input.ContentSignature;
 import org.skyve.impl.metadata.view.widget.bound.input.ContentUpload;
+import org.skyve.impl.metadata.view.widget.bound.input.Geometry;
+import org.skyve.impl.metadata.view.widget.bound.input.GeometryMap;
 import org.skyve.impl.metadata.view.widget.bound.input.HTML;
 import org.skyve.impl.metadata.view.widget.bound.input.KeyboardType;
+import org.skyve.impl.metadata.view.widget.bound.input.ListMembership;
 import org.skyve.impl.metadata.view.widget.bound.input.LookupDescription;
 import org.skyve.impl.metadata.view.widget.bound.input.Radio;
 import org.skyve.impl.metadata.view.widget.bound.input.RichText;
@@ -102,15 +118,15 @@ import org.skyve.impl.metadata.view.widget.bound.tabular.DataGridBoundColumn;
 import org.skyve.impl.metadata.view.widget.bound.tabular.DataGridContainerColumn;
 import org.skyve.impl.metadata.view.widget.bound.tabular.DataRepeater;
 import org.skyve.impl.metadata.view.widget.bound.tabular.ListGrid;
-import org.skyve.impl.web.AbstractWebContext;
-import org.skyve.impl.web.faces.pipeline.component.ComponentBuilder.EventSourceComponent;
-import org.skyve.impl.web.faces.models.SkyveLazyDataModel;
-import org.skyve.impl.web.faces.views.FacesView;
 import org.skyve.impl.persistence.AbstractPersistence;
+import org.skyve.impl.web.AbstractWebContext;
+import org.skyve.impl.web.faces.models.SkyveLazyDataModel;
+import org.skyve.impl.web.faces.pipeline.component.ComponentBuilder.EventSourceComponent;
+import org.skyve.impl.web.faces.views.FacesView;
 import org.skyve.metadata.FormatterName;
-import org.skyve.metadata.model.document.Document;
 import org.skyve.metadata.controller.Customisations;
 import org.skyve.metadata.controller.ImplicitActionName;
+import org.skyve.metadata.model.document.Document;
 import org.skyve.metadata.module.query.MetaDataQueryContentColumn;
 import org.skyve.metadata.module.query.MetaDataQueryProjectedColumn;
 import org.skyve.metadata.module.query.QueryDefinition;
@@ -119,7 +135,6 @@ import org.skyve.metadata.view.TextOutput.Sanitisation;
 import org.skyve.metadata.view.model.list.ListModel;
 import org.skyve.metadata.view.widget.FilterParameter;
 import org.skyve.metadata.view.widget.bound.Parameter;
-import org.skyve.impl.metadata.repository.module.MetaDataQueryContentColumnMetaData.DisplayType;
 
 import jakarta.el.ELContext;
 import jakarta.el.ExpressionFactory;
@@ -138,26 +153,11 @@ import jakarta.faces.component.html.HtmlOutputLink;
 import jakarta.faces.component.html.HtmlOutputText;
 import jakarta.faces.component.html.HtmlPanelGrid;
 import jakarta.faces.component.html.HtmlPanelGroup;
-import jakarta.faces.convert.Converter;
 import jakarta.faces.context.FacesContext;
-import org.primefaces.component.barchart.BarChart;
-import org.primefaces.component.donutchart.DonutChart;
-import org.primefaces.component.linechart.LineChart;
-import org.primefaces.component.piechart.PieChart;
-import org.primefaces.component.polarareachart.PolarAreaChart;
-import org.primefaces.component.radarchart.RadarChart;
-import org.primefaces.model.charts.ChartModel;
-import org.primefaces.component.spacer.Spacer;
-import org.skyve.impl.metadata.view.widget.Chart;
-import org.skyve.impl.metadata.view.widget.Chart.ChartType;
-import org.primefaces.component.overlaypanel.OverlayPanel;
-import org.skyve.impl.metadata.view.widget.DynamicImage;
-import org.skyve.impl.metadata.view.widget.StaticImage;
-import org.skyve.impl.metadata.view.widget.bound.input.Geometry;
-import org.skyve.impl.metadata.view.widget.bound.input.GeometryMap;
+import jakarta.faces.convert.Converter;
 
 // Repeated values specify builder contracts; reflection is required for isolated private-helper coverage.
-@SuppressWarnings({ "java:S112", "java:S1192", "java:S3011", "java:S5960" }) // Reflection and assertions are test-only.
+@SuppressWarnings({ "static-method", "java:S112", "java:S1192", "java:S3011", "java:S5960" }) // Reflection and assertions are test-only.
 class TabularComponentBuilderTest {
 
 	private static ExpressionFactory mockExpressionFactory;
@@ -185,6 +185,10 @@ class TabularComponentBuilderTest {
 
 		void invokeSetValueOrValueExpressionForTest(String value, java.util.function.Consumer<String> valueSetter, String valueExpressionName, UIComponent component) {
 			setValueOrValueExpression(value, valueSetter, valueExpressionName, component);
+		}
+
+		void invokeSetDisabledForTest(UIComponent component, String disabledConditionName, String parentDisabledConditionName) {
+			setDisabled(component, disabledConditionName, parentDisabledConditionName);
 		}
 
 		UIComponent invokeCreateSpecialColumnFilterFacetComponentForTest(Document modelDrivingDocument,
@@ -888,10 +892,10 @@ class TabularComponentBuilderTest {
 		AbstractPersistence persistence = mock(AbstractPersistence.class, org.mockito.Mockito.CALLS_REAL_METHODS);
 		AbstractPersistence previousPersistence = currentPersistenceIfPresent();
 		if (canCreateDocument) {
-			org.mockito.Mockito.doReturn(Boolean.TRUE).when(user).canCreateDocument(drivingDocument);
+			doReturn(Boolean.TRUE).when(user).canCreateDocument(drivingDocument);
 		}
 		else {
-			org.mockito.Mockito.doReturn(Boolean.FALSE).when(user).canCreateDocument(drivingDocument);
+			doReturn(Boolean.FALSE).when(user).canCreateDocument(drivingDocument);
 		}
 		when(user.getCustomer()).thenReturn(customer);
 		when(customer.getModule("sales")).thenReturn(module);
@@ -941,8 +945,8 @@ class TabularComponentBuilderTest {
 		FacesContextBridge.setCurrent(null);
 	}
 
-	@SuppressWarnings({ "static-method", "java:S135", "java:S3776" }) // Reflection deliberately covers every public method shape.
 	@Test
+	@SuppressWarnings({ "java:S135", "java:S3776" }) // Reflection deliberately covers every public method shape.
 	void testShortCircuitMethodsReturnExistingComponent() throws Exception {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
 		UIComponent existingComponent = new HtmlPanelGroup();
@@ -1002,7 +1006,6 @@ class TabularComponentBuilderTest {
 		assertTrue(exercisedMethods >= 50, "Expected to exercise many short-circuit methods");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSidebarScriptDefaultWidthBreakpointAndFloating() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1015,7 +1018,6 @@ class TabularComponentBuilderTest {
 		assertTrue(script.contains("SKYVE.PF.sidebar('sb1','360px',1280,360,'Create')"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testToolbarsCreatesToolbarWhenComponentsNull() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1031,7 +1033,6 @@ class TabularComponentBuilderTest {
 		assertEquals(ComponentBuilder.ACTION_BAR_STYLE_CLASS, toolbar.getStyleClass());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testToolbarsCreatesToolbarWithGeneratedIdWhenWidgetIdNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1050,7 +1051,6 @@ class TabularComponentBuilderTest {
 		assertEquals(ComponentBuilder.ACTION_BAR_STYLE_CLASS, toolbar.getStyleClass());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTabPaneCreatesHiddenTabViewWhenNoSelectedTabBinding() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1065,7 +1065,6 @@ class TabularComponentBuilderTest {
 		assertNotNull(result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTabPaneUsesGeneratedIdWhenWidgetIdNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1082,7 +1081,6 @@ class TabularComponentBuilderTest {
 		assertEquals("generatedTabPaneId", result.getId());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTabPaneSetsOnTabChangeScriptWithModuleDocumentAndId() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1099,7 +1097,6 @@ class TabularComponentBuilderTest {
 		verify(tabView).setOnTabChange("SKYVE.PF.tabChange('admin','User','tpScript',index)");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTabPaneSetsActiveIndexAndStyleExpressionsWhenSelectedTabBindingPresent() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1123,7 +1120,6 @@ class TabularComponentBuilderTest {
 		verify(tabView, never()).setStyle("display:none");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTabCreatesTabComponentWhenNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1145,7 +1141,6 @@ class TabularComponentBuilderTest {
 		verify(tabComponent).setId("generatedTabId");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testLabelCreatesOutputLabelWhenNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1161,7 +1156,6 @@ class TabularComponentBuilderTest {
 		assertEquals("generatedLabelId", result.getId());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testBlurbUsesOutputTextValuePathWhenComponentNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1182,7 +1176,6 @@ class TabularComponentBuilderTest {
 		verify(outputText).setEscape(false);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testBoundLabelUsesBindingExpressionAndEscapesQuotes() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1210,7 +1203,6 @@ class TabularComponentBuilderTest {
 		verify(outputText).setEscape(false);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testBoundLabelBindingWithoutDataWidgetVarUsesCurrentBeanPath() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1236,7 +1228,6 @@ class TabularComponentBuilderTest {
 		verify(outputText).setValueExpression("value", valueExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testPanelWithCollapsibleClosedAddsToggleBehavior() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1269,7 +1260,6 @@ class TabularComponentBuilderTest {
 		verify(panel).addClientBehavior("toggle", ajax);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testPanelEscapesHeaderByDefault() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1290,7 +1280,6 @@ class TabularComponentBuilderTest {
 		verify(header).setEscape(true);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testPanelAllowsTrustedHeaderWhenEscapeFalse() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1312,7 +1301,6 @@ class TabularComponentBuilderTest {
 		verify(header).setEscape(false);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTabEscapesTitleByDefault() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1334,7 +1322,6 @@ class TabularComponentBuilderTest {
 		verify(tabComponent, never()).setTitle(anyString());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTabAllowsTrustedTitleWhenEscapeFalse() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1358,7 +1345,6 @@ class TabularComponentBuilderTest {
 		verify(tabComponent, never()).setTitle(anyString());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testZoomInActionExpressionSetsNavigateMethodExpression() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1372,7 +1358,6 @@ class TabularComponentBuilderTest {
 		verify(command).setActionExpression(methodExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSetValueOrValueExpressionLiteralUsesSetter() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1385,7 +1370,6 @@ class TabularComponentBuilderTest {
 		verify(component, never()).setValueExpression(anyString(), any(ValueExpression.class));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSetValueOrValueExpressionBindingUsesValueExpression() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1399,7 +1383,6 @@ class TabularComponentBuilderTest {
 		verify(component).setValueExpression("header", valueExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSetConfirmationAddsConfirmBehavior() throws Exception {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1416,7 +1399,6 @@ class TabularComponentBuilderTest {
 		verify(component).addClientBehavior("click", confirm);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testZoomInCreatesButtonWithDefaultProcessAndUpdate() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1444,7 +1426,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setActionExpression(actionExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testZoomInEscapesLabelAndTooltipByDefault() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1472,7 +1453,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setTitle("Open \"contact\"");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testZoomInAllowsTrustedLabelButStripsTooltipWhenEscapeFalse() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1497,7 +1477,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setTitle("Open");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDialogButtonAllowsTrustedDisplayNameWhenEscapeFalse() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1522,7 +1501,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setType("button");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testZoomInUsesProcessAndUpdateOverrides() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1548,7 +1526,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setActionExpression(actionExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCheckBoxDelegatesNonShortcutPath() {
 		CapturingInputDelegationBuilder builder = new CapturingInputDelegationBuilder();
@@ -1570,7 +1547,20 @@ class TabularComponentBuilderTest {
 		assertTrue(builder.checkBoxTriState);
 	}
 
-	@SuppressWarnings("static-method")
+	@Test
+	void testInheritedGridConditionRendersAsDisabledExpression() {
+		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
+		UIComponent component = mock(UIComponent.class);
+		ValueExpression disabledExpression = mock(ValueExpression.class);
+		when(mockExpressionFactory.createValueExpression(any(ELContext.class),
+														eq("#{skyve.currentBean['gridLocked']}"),
+														eq(Boolean.class))).thenReturn(disabledExpression);
+
+		builder.invokeSetDisabledForTest(component, null, "gridLocked");
+
+		verify(component).setValueExpression("disabled", disabledExpression);
+	}
+
 	@Test
 	void testColourPickerDelegatesNonShortcutPath() {
 		CapturingInputDelegationBuilder builder = new CapturingInputDelegationBuilder();
@@ -1599,7 +1589,6 @@ class TabularComponentBuilderTest {
 		assertEquals(Integer.valueOf(160), builder.colourPickerPixelWidth);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testComboNonShortcutPathAddsSelectItemsChild() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -1624,7 +1613,6 @@ class TabularComponentBuilderTest {
 		assertSame(selectItems, children.get(0));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testContentUploadLinkModeRendersLinkLikeOutput() {
 		clearInvocations(mockExpressionFactory);
@@ -1665,7 +1653,6 @@ class TabularComponentBuilderTest {
 		assertTrue(expressions.getAllValues().contains("#{(empty row['doc.attachment']) ? '&lt;Empty&gt;' : 'Content'}"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testContentUploadVideoModeRendersVideoWithFormDefaults() {
 		clearInvocations(mockExpressionFactory);
@@ -1704,7 +1691,6 @@ class TabularComponentBuilderTest {
 		assertTrue(expressions.getValue().contains(" ? '' : '<video"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testContentUploadVideoModeUsesFluidDimensionsOutsideFormWhenUnsized() {
 		clearInvocations(mockExpressionFactory);
@@ -1735,7 +1721,6 @@ class TabularComponentBuilderTest {
 		assertTrue(expressions.getValue().contains("class=\"#{(empty row['doc.video']) ? 'skyveContentPreview skyveContentResponsiveVideo skyveContentEmpty skyveContentVideoEmpty' : 'skyveContentPreview skyveContentResponsiveVideo'}\" style=\"border:1px solid #d6dee8;position:relative;overflow:hidden;\""));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testContentUploadAutoModeUsesMediaKindHooks() {
 		clearInvocations(mockExpressionFactory);
@@ -1795,7 +1780,6 @@ class TabularComponentBuilderTest {
 		assertTrue(styleClassExpressions.getAllValues().contains("#{skyve.getContentMediaKind(row,'doc.attachment') eq 'video' ? '' : 'skyveContentHidden'}"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testEditableAutoContentUploadAddsNonSubmittedCompanionHiddenField() {
 		clearInvocations(mockExpressionFactory);
@@ -1896,7 +1880,6 @@ class TabularComponentBuilderTest {
 		assertTrue(expressions.getAllValues().contains("#{(empty row['doc.attachment']) ? ((skyve.currentBean['attachmentDisabled'] or skyve.currentBean['formDisabled']) ? 'return false' : \"PF('contentGrid_doc_attachmentOverlay').show();return false\") : null}"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testEditableAutoContentUploadCanUseImageUploadRoute() {
 		clearInvocations(mockExpressionFactory);
@@ -1987,8 +1970,8 @@ class TabularComponentBuilderTest {
 		assertTrue(expressions.getAllValues().stream().anyMatch(value -> value.contains("getContentUploadUrl('doc_image','auto','none','doc_image_media','row',row['bizId'])")));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
+	@SuppressWarnings("java:S5961")
 	void testContentUploadWithCameraCaptureUsesImageLabelsAndFullDialog() {
 		clearInvocations(mockExpressionFactory);
 
@@ -2080,7 +2063,6 @@ class TabularComponentBuilderTest {
 		assertFalse(expressions.getAllValues().stream().anyMatch(value -> value.contains("toggleMaximize()")));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testContentUploadWithVideoModeUsesVideoMenuLabels() {
 		clearInvocations(mockExpressionFactory);
@@ -2150,7 +2132,6 @@ class TabularComponentBuilderTest {
 																			value.contains("onclick=\"#{(empty row['doc.video']) ? \"PF('contentGrid_doc_videoOverlay').show();return false\" : null}\"")));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testLinkContentUploadShowsMarkupActionForStoredImageContent() {
 		clearInvocations(mockExpressionFactory);
@@ -2245,7 +2226,6 @@ class TabularComponentBuilderTest {
 		assertTrue(expressions.getAllValues().stream().anyMatch(value -> value.contains("SKYVE.PF.lockPageScroll();SKYVE.PF.contentMarkupOnShow(\\'contentGrid\\',\\'doc_attachment\\'")));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testLinkContentUploadRendersHiddenMarkupActionForFutureImageContent() {
 		clearInvocations(mockExpressionFactory);
@@ -2319,7 +2299,6 @@ class TabularComponentBuilderTest {
 		verify(markupItem).setContainerStyleClass("skyveContentMarkupAction skyveContentMarkupAction-contentGrid_doc_attachment skyveContentHidden");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testHtmlNonShortcutPathConfiguresEditor() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -2339,7 +2318,6 @@ class TabularComponentBuilderTest {
 		verify(textEditor).setSecure(false);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testLookupDescriptionDelegatesNonShortcutPath() {
 		CapturingInputDelegationBuilder builder = new CapturingInputDelegationBuilder();
@@ -2373,7 +2351,6 @@ class TabularComponentBuilderTest {
 		assertEquals(Integer.valueOf(280), builder.lookupPixelWidth);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testPasswordDelegatesNonShortcutPathAndSetsRedisplay() {
 		CapturingInputDelegationBuilder builder = new CapturingInputDelegationBuilder();
@@ -2403,7 +2380,6 @@ class TabularComponentBuilderTest {
 		verify(builder.delegatedPasswordResult).setRedisplay(true);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testRadioNonShortcutPathAddsSelectItemsAndBindingAttribute() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -2432,7 +2408,6 @@ class TabularComponentBuilderTest {
 		assertEquals("status", attributes.get("binding"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testRichTextNonShortcutPathConfiguresEditor() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -2458,7 +2433,6 @@ class TabularComponentBuilderTest {
 		verify(textEditor).setAllowStyles(false);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSpinnerNonShortcutPathConfiguresPrimeSpinner() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -2502,7 +2476,6 @@ class TabularComponentBuilderTest {
 		assertEquals("numeric", passThroughAttributes.get("inputmode"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSliderNonShortcutPathConfiguresHorizontalSlider() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -2554,7 +2527,6 @@ class TabularComponentBuilderTest {
 		assertSame(display, children.get(2));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTextAreaDelegatesNonShortcutPathAndSetsInputMode() {
 		CapturingInputDelegationBuilder builder = new CapturingInputDelegationBuilder();
@@ -2594,7 +2566,6 @@ class TabularComponentBuilderTest {
 		assertEquals("tel", passThroughAttributes.get("inputmode"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTextAreaUsesBaseTextAreaBuilder() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -2631,7 +2602,6 @@ class TabularComponentBuilderTest {
 		assertEquals("tel", passThroughAttributes.get("inputmode"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testLookupDescriptionUsesBaseLookupDescriptionBuilder() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -2644,7 +2614,8 @@ class TabularComponentBuilderTest {
 		builder.setManagedBeanForTest(managedBean);
 
 		when(mockApplication.createComponent(AutoComplete.COMPONENT_TYPE)).thenReturn(autoComplete);
-		when(mockExpressionFactory.createMethodExpression(any(ELContext.class), anyString(), eq(List.class), any(Class[].class))).thenReturn(mock(MethodExpression.class));
+		MethodExpression methodExpression = mock(MethodExpression.class);
+		when(mockExpressionFactory.createMethodExpression(any(ELContext.class), anyString(), eq(List.class), any(Class[].class))).thenReturn(methodExpression);
 
 		LookupDescription lookupDescription = new LookupDescription();
 		lookupDescription.setBinding("customer");
@@ -2673,7 +2644,6 @@ class TabularComponentBuilderTest {
 		assertEquals("name", attributes.get("display"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testPasswordUsesBasePasswordBuilder() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -2711,7 +2681,6 @@ class TabularComponentBuilderTest {
 		assertEquals("none", passThroughAttributes.get("autocorrect"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTextDelegatesToTextFieldWhenNoConverterOrComplete() {
 		CapturingInputDelegationBuilder builder = new CapturingInputDelegationBuilder();
@@ -2750,7 +2719,6 @@ class TabularComponentBuilderTest {
 		assertEquals(Integer.valueOf(180), builder.textFieldPixelWidth);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testInputTitleStripsMarkupAndAppendsRequiredMarker() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -2783,7 +2751,6 @@ class TabularComponentBuilderTest {
 															eq(String.class));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testInputTitleStripsMarkupWhenEscapeFalse() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -2817,7 +2784,6 @@ class TabularComponentBuilderTest {
 															eq(String.class));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTextDelegatesToCompleteWhenCompleteConfigured() {
 		CapturingInputDelegationBuilder builder = new CapturingInputDelegationBuilder();
@@ -2854,7 +2820,6 @@ class TabularComponentBuilderTest {
 		assertEquals(Integer.valueOf(220), builder.completePixelWidth);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTextUsesMaskFieldWhenFormatHasMask() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -2896,7 +2861,6 @@ class TabularComponentBuilderTest {
 		assertEquals("numeric", passThroughAttributes.get("inputmode"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDetermineMaskEscapesPrimeFacesCharacters() throws Exception {
 		Format<Object> format = new Format<>("A#L9a*?", TextCase.upper);
@@ -2909,7 +2873,6 @@ class TabularComponentBuilderTest {
 		assertNull(method.invoke(null, (Object) null));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionLinkDelegatesToActionLinkWhenNotDownload() {
 		CapturingDelegationBuilder builder = new CapturingDelegationBuilder();
@@ -2955,7 +2918,6 @@ class TabularComponentBuilderTest {
 		assertEquals("@none", builder.linkUpdateOverride);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionLinkDelegatesToDownloadLinkWhenImplicitDownload() {
 		CapturingDelegationBuilder builder = new CapturingDelegationBuilder();
@@ -2997,7 +2959,6 @@ class TabularComponentBuilderTest {
 		assertEquals("@(form)", builder.downloadLinkUpdateOverride);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionLinkEscapesValueTooltipAndConfirmByDefault() {
 		CapturingDelegationBuilder builder = new CapturingDelegationBuilder();
@@ -3027,7 +2988,6 @@ class TabularComponentBuilderTest {
 		assertEquals(Boolean.TRUE, builder.linkConfirmationEscape);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionLinkAllowsTrustedValueAndConfirmButStripsTooltipWhenEscapeFalse() {
 		CapturingDelegationBuilder builder = new CapturingDelegationBuilder();
@@ -3058,7 +3018,6 @@ class TabularComponentBuilderTest {
 		assertEquals(Boolean.FALSE, builder.linkConfirmationEscape);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionLinkImplicitDownloadUsesBaseDownloadLink() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -3105,7 +3064,6 @@ class TabularComponentBuilderTest {
 		verify(commandLink).setActionExpression(actionExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDownloadNonShortcutPathUsesOverridesFromActionProperties() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -3142,7 +3100,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setActionExpression(actionExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testUploadDelegatesNonShortcutPath() {
 		CapturingDelegationBuilder builder = new CapturingDelegationBuilder();
@@ -3175,7 +3132,6 @@ class TabularComponentBuilderTest {
 		assertFalse(builder.uploadUseDialog);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testRemoveDelegatesNonShortcutPath() {
 		CapturingDelegationBuilder builder = new CapturingDelegationBuilder();
@@ -3216,7 +3172,6 @@ class TabularComponentBuilderTest {
 		assertTrue(builder.actionCanDelete);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionDelegatesNonShortcutPath() {
 		CapturingDelegationBuilder builder = new CapturingDelegationBuilder();
@@ -3261,7 +3216,6 @@ class TabularComponentBuilderTest {
 		assertFalse(builder.actionCanDelete);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionButtonEscapesValueTitleAndConfirmByDefault() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -3305,7 +3259,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).addClientBehavior("click", confirm);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionButtonAllowsTrustedValueAndConfirmButStripsTitleWhenEscapeFalse() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -3347,7 +3300,6 @@ class TabularComponentBuilderTest {
 		verify(confirm).setEscape(false);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testReportNonShortcutPathBuildsReportHref() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -3391,7 +3343,6 @@ class TabularComponentBuilderTest {
 		verify(reportButton).setTitle("Open report");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListRepeaterNonShortcutPathConfiguresDataTable() {
 		CapturingListBuilder builder = new CapturingListBuilder();
@@ -3443,7 +3394,6 @@ class TabularComponentBuilderTest {
 		verify(dataTable).setValueExpression("value", modelExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListGridNonShortcutPathConfiguresDataTableComponent() {
 		ListGridCallResult r = invokeListGrid();
@@ -3459,7 +3409,6 @@ class TabularComponentBuilderTest {
 		verify(r.emptyMessage).setValue(TabularComponentBuilder.EMPTY_DATA_TABLE_CAN_ADD_MESSAGE);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListGridConfiguresStickyHeaderFromBuilderSelector() {
 		ListGridCallResult r = invokeListGrid(true, grid -> grid.setShowZoom(Boolean.FALSE), "#header");
@@ -3468,7 +3417,6 @@ class TabularComponentBuilderTest {
 		verify(r.dataTable).setStickyTopAt("#header");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListGridNonShortcutPathDelegatesColumnsAndActionColumn() {
 		ListGridCallResult r = invokeListGrid();
@@ -3495,7 +3443,6 @@ class TabularComponentBuilderTest {
 		assertSame(r.grid.getProperties(), r.builder.actionProperties);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListGridCreateDisabledUsesOnlyDisabledConditionWhenDisableAddMissing() {
 		ListGridCallResult r = invokeListGrid(true, grid -> {
@@ -3510,7 +3457,6 @@ class TabularComponentBuilderTest {
 		assertEquals("disableGrid", r.builder.actionCreateDisabled[0]);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListGridCreateDisabledUsesOnlyDisableAddConditionWhenFormDisabledMissing() {
 		ListGridCallResult r = invokeListGrid(true, grid -> {
@@ -3525,7 +3471,6 @@ class TabularComponentBuilderTest {
 		assertEquals("disableAdd", r.builder.actionCreateDisabled[0]);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListGridSelectedBindingDelegatesToDataTableSelection() {
 		ListGridCallResult r = invokeListGrid(true, grid -> {
@@ -3541,7 +3486,6 @@ class TabularComponentBuilderTest {
 		assertTrue(r.builder.selectionRowKeyFromModel);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListGridUsesDefaultEmptyMessageWhenUserCannotCreate() {
 		ListGridCallResult r = invokeListGrid(false, grid -> {
@@ -3554,7 +3498,6 @@ class TabularComponentBuilderTest {
 		verify(r.emptyMessage).setValue(TabularComponentBuilder.EMPTY_DATA_TABLE_MESSAGE);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListGridZoomWithDisableConditionUsesSelectionExpressionAndRowSelectBehavior() {
 		when(mockApplication.createBehavior(AjaxBehavior.BEHAVIOR_ID)).thenReturn(new AjaxBehavior());
@@ -3571,7 +3514,6 @@ class TabularComponentBuilderTest {
 		verify(r.dataTable).addClientBehavior(eq("rowSelect"), any(AjaxBehavior.class));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListGridZoomWithoutDisableConditionUsesSingleSelectionAndRowSelectBehavior() {
 		when(mockApplication.createBehavior(AjaxBehavior.BEHAVIOR_ID)).thenReturn(new AjaxBehavior());
@@ -3587,7 +3529,6 @@ class TabularComponentBuilderTest {
 		verify(r.dataTable).addClientBehavior(eq("rowSelect"), any(AjaxBehavior.class));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListGridBuildsCreateUrlParamsFromFilterAndParameterDefinitions() {
 		FilterParameter bindingFilter = mock(FilterParameter.class);
@@ -3630,7 +3571,6 @@ class TabularComponentBuilderTest {
 		assertTrue(r.builder.actionCreateUrlParams.contains("limit=25"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListMembershipNonShortcutPathSetsDefaultFacetHeadings() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -3662,7 +3602,6 @@ class TabularComponentBuilderTest {
 	}
 
 	@Test
-	@SuppressWarnings("static-method")
 	void testListMembershipEscapesFacetHeadingsByDefaultAndWhenExplicitTrue() {
 		ListMembership membership = new ListMembership();
 		membership.setBinding("roles");
@@ -3691,7 +3630,6 @@ class TabularComponentBuilderTest {
 	}
 
 	@Test
-	@SuppressWarnings("static-method")
 	void testListMembershipAllowsTrustedFacetHeadingsWhenEscapingFalse() {
 		ListMembership membership = new ListMembership();
 		membership.setBinding("roles");
@@ -3709,7 +3647,6 @@ class TabularComponentBuilderTest {
 		verify(context.targetCaption).setEscape(false);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateListGridZoomButtonAppliesDisabledConditionAndOnclick() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -3733,7 +3670,6 @@ class TabularComponentBuilderTest {
 		verify(button).setValueExpression("onclick", onclickExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListGridContextMenuAddsZoomItemsWithDisabledExpression() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -3763,7 +3699,6 @@ class TabularComponentBuilderTest {
 		verify(popoutItem).setOnclick(argThat(value -> value.contains("window.open('?a=")));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddContentSignatureNonShortcutPathBuildsSignatureAndButtons() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -3825,7 +3760,6 @@ class TabularComponentBuilderTest {
 		verify(signButton).setUpdate("sigLayout");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateListGridActionColumnAddsFilterCreateAndZoomControls() {
 		ListGridActionColumnBuilder builder = new ListGridActionColumnBuilder(mock(UIComponent.class), mock(UIComponent.class));
@@ -3872,7 +3806,6 @@ class TabularComponentBuilderTest {
 		verify(createButton).setValueExpression("onclick", stringExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateListGridActionColumnSetsBlankHeaderWhenCreateNotRendered() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -3906,7 +3839,6 @@ class TabularComponentBuilderTest {
 		verify(actionColumn).setHeaderText("");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateListGridActionColumnUsesOnclickWhenCreateUrlParamsMissing() {
 		ListGridActionColumnBuilder builder = new ListGridActionColumnBuilder(null, null);
@@ -3946,7 +3878,6 @@ class TabularComponentBuilderTest {
 		verify(createButton).setOnclick("SKYVE.PF.pushHistory('./?a=e&m=sales&d=Order');return false");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateListGridZoomButtonWithNullConditionOmitsDisabledExpression() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -3968,8 +3899,8 @@ class TabularComponentBuilderTest {
 		verify(button).setValueExpression("onclick", onclickExpression);
 	}
 
-	@SuppressWarnings({ "static-method", "boxing" })
 	@Test
+	@SuppressWarnings("boxing")
 	void testAddListGridDataColumnsAddsProjectedColumnWithoutMetadataBindingLookup() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
 		Column column = mock(Column.class);
@@ -4041,8 +3972,8 @@ class TabularComponentBuilderTest {
 		verify(outputText).setEscape(false);
 	}
 
-	@SuppressWarnings({ "static-method", "boxing" })
 	@Test
+	@SuppressWarnings("boxing")
 	void testAddListGridDataColumnsUsesFormatterNameWhenPresent() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
 		Column column = mock(Column.class);
@@ -4108,8 +4039,8 @@ class TabularComponentBuilderTest {
 		verify(outputText).setEscape(false);
 	}
 
-	@SuppressWarnings({ "static-method", "boxing" })
 	@Test
+	@SuppressWarnings("boxing")
 	void testAddListGridDataColumnsUsesCustomFormatterNameWhenPresent() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
 		Column column = mock(Column.class);
@@ -4172,8 +4103,8 @@ class TabularComponentBuilderTest {
 		verify(outputText).setEscape(false);
 	}
 
-	@SuppressWarnings({ "static-method", "boxing" })
 	@Test
+	@SuppressWarnings("boxing")
 	void testAddListGridDataColumnsAddsThumbnailContentColumnWithPaddingAndCalculatedWidth() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
 		Column column = mock(Column.class);
@@ -4247,8 +4178,8 @@ class TabularComponentBuilderTest {
 		verify(outputText).setEscape(false);
 	}
 
-	@SuppressWarnings({ "static-method", "boxing" })
 	@Test
+	@SuppressWarnings("boxing")
 	void testAddListGridDataColumnsAddsLinkContentColumnWithExplicitWidthAndAlignment() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
 		Column column = mock(Column.class);
@@ -4320,7 +4251,6 @@ class TabularComponentBuilderTest {
 		verify(outputText).setEscape(false);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionButtonDelegatesNonShortcutPath() {
 		CapturingDelegationBuilder builder = new CapturingDelegationBuilder();
@@ -4369,7 +4299,6 @@ class TabularComponentBuilderTest {
 		assertFalse(builder.actionCanDelete);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testUploadButtonDelegatesNonShortcutPath() {
 		CapturingDelegationBuilder builder = new CapturingDelegationBuilder();
@@ -4409,7 +4338,6 @@ class TabularComponentBuilderTest {
 		assertFalse(builder.uploadUseDialog);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testUploadUsesBaseUploadButtonWithOverlay() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4475,7 +4403,6 @@ class TabularComponentBuilderTest {
 						iframeMarkupCaptor.getValue());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testUploadCameraActionUsesFullDialog() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4537,7 +4464,6 @@ class TabularComponentBuilderTest {
 																			value.contains(".concat('\\',true)')}")));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testUploadButtonAllCaptureActionUsesFullDialog() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4599,7 +4525,6 @@ class TabularComponentBuilderTest {
 																			value.contains(".concat('\\',true)')}")));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testUploadButtonFullDialogUsesResponsiveViewportIframe() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4669,7 +4594,6 @@ class TabularComponentBuilderTest {
 																			value.contains(".concat('\\',true)')}")));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDownloadButtonNonShortcutPathUsesDefaultProcessAndUpdate() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4716,7 +4640,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setActionExpression(actionExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDownloadButtonNonShortcutPathUsesOverridesFromActionProperties() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4757,7 +4680,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setActionExpression(actionExpression);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDataGridUsesCanAddEmptyMessageWhenEditableAndShowAddAreNotFalse() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4785,7 +4707,6 @@ class TabularComponentBuilderTest {
 		verify(emptyMessage).setValue(TabularComponentBuilder.EMPTY_DATA_TABLE_CAN_ADD_MESSAGE);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDataGridUsesDefaultEmptyMessageWhenNotEditable() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4812,7 +4733,6 @@ class TabularComponentBuilderTest {
 		verify(emptyMessage).setValue(TabularComponentBuilder.EMPTY_DATA_TABLE_MESSAGE);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDataRepeaterNonShortcutPathSetsExpectedDataTableOptions() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4836,7 +4756,6 @@ class TabularComponentBuilderTest {
 		verify(dataTable).setReflow(true);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddDataGridBoundColumnNonShortcutPathAddsColumnWhenInlineEditable() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4878,7 +4797,6 @@ class TabularComponentBuilderTest {
 		verify(header).setEscape(true);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddDataGridBoundColumnEscapesHeaderByDefault() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4915,7 +4833,6 @@ class TabularComponentBuilderTest {
 		verify(header).setEscape(true);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddDataGridBoundColumnAllowsTrustedHeaderWhenEscapeFalse() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4953,7 +4870,6 @@ class TabularComponentBuilderTest {
 		verify(header).setEscape(false);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddedDataGridBoundColumnNonShortcutPathReturnsParentWhenNoChildren() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4967,7 +4883,6 @@ class TabularComponentBuilderTest {
 		assertSame(parent, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddedDataGridBoundColumnNonShortcutPathPrependsMessageForNonInputContent() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -4997,7 +4912,6 @@ class TabularComponentBuilderTest {
 		assertEquals("float:left", message.getStyle());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddedDataGridBoundColumnNonShortcutPathWrapsInputContentWithMessage() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5035,7 +4949,6 @@ class TabularComponentBuilderTest {
 		assertEquals("float:left", message.getStyle());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddedDataGridBoundColumnNonShortcutPathJustifiesCheckboxContent() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5070,7 +4983,6 @@ class TabularComponentBuilderTest {
 		assertEquals("float:left", message.getStyle());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddDataGridContainerColumnNonShortcutPathAddsColumn() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5105,7 +5017,6 @@ class TabularComponentBuilderTest {
 		verify(header).setEscape(true);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddedDataGridContainerColumnNonShortcutPathReturnsParent() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5118,7 +5029,6 @@ class TabularComponentBuilderTest {
 		assertSame(parent, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddDataGridActionColumnNonShortcutPathReturnsCurrentWhenGridNotEditable() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5131,7 +5041,6 @@ class TabularComponentBuilderTest {
 		assertSame(current, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSidebarScriptPixelWidthAndDerivedFloatingWidth() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5146,7 +5055,6 @@ class TabularComponentBuilderTest {
 		assertTrue(script.contains("SKYVE.PF.sidebar('sb2','480px',900,480,'Edit')"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSidebarScriptResponsiveAndPercentageWidths() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5167,7 +5075,6 @@ class TabularComponentBuilderTest {
 		assertTrue(percentageScript.contains("SKYVE.PF.sidebar('sb4','75%',1280,360,'Create')"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSidebarScriptUsesExplicitFloatingWidthWhenProvided() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5182,7 +5089,6 @@ class TabularComponentBuilderTest {
 		assertTrue(script.contains("SKYVE.PF.sidebar('sb5','480px',1280,300,'Edit')"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTabPaneScriptWithoutSelectedTabBinding() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5196,7 +5102,6 @@ class TabularComponentBuilderTest {
 		assertTrue(script.contains("t.select("));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTabPaneScriptSetsRenderedExpressionWhenSelectedTabBindingPresent() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5241,7 +5146,6 @@ class TabularComponentBuilderTest {
 		}
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testChartCreatesBarChartForBarType() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5267,7 +5171,6 @@ class TabularComponentBuilderTest {
 		verify(barChart).setValueExpression("model", modelExpr);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testChartCreatesBarChartForHorizontalBarType() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5291,7 +5194,6 @@ class TabularComponentBuilderTest {
 		assertEquals(ChartType.horizontalBar, attributes.get("skyveType"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testChartCreatesDonutChartForDoughnutType() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5314,7 +5216,6 @@ class TabularComponentBuilderTest {
 		assertEquals(ChartType.doughnut, attributes.get("skyveType"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testChartCreatesLineChartForLineType() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5337,7 +5238,6 @@ class TabularComponentBuilderTest {
 		assertEquals(ChartType.line, attributes.get("skyveType"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testChartCreatesLineChartForLineAreaType() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5360,7 +5260,6 @@ class TabularComponentBuilderTest {
 		assertEquals(ChartType.lineArea, attributes.get("skyveType"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testChartCreatesPieChartForPieType() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5383,7 +5282,6 @@ class TabularComponentBuilderTest {
 		assertEquals(ChartType.pie, attributes.get("skyveType"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testChartCreatesPolarAreaChartForPolarAreaType() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5406,7 +5304,6 @@ class TabularComponentBuilderTest {
 		assertEquals(ChartType.polarArea, attributes.get("skyveType"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testChartCreatesRadarChartForRadarType() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5429,7 +5326,6 @@ class TabularComponentBuilderTest {
 		assertEquals(ChartType.radar, attributes.get("skyveType"));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testChartUsesModelObjectWhenModelNameNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5453,7 +5349,6 @@ class TabularComponentBuilderTest {
 		assertNotNull(result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testBorderDelegatesToPanelWhenComponentNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5475,7 +5370,6 @@ class TabularComponentBuilderTest {
 		verify(header).setEscape(true);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testBorderWithCollapsibleAddsToggleBehavior() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5500,7 +5394,6 @@ class TabularComponentBuilderTest {
 		verify(panel).setCollapsed(false);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testViewCreatesHtmlPanelGroupWhenComponentNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5518,7 +5411,6 @@ class TabularComponentBuilderTest {
 		verify(panelGroup).setValueExpression(eq("rendered"), any(ValueExpression.class));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testViewUsesNotCreatedBindingWhenCreateViewFalse() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5539,7 +5431,6 @@ class TabularComponentBuilderTest {
 		assertTrue(expressionCaptor.getAllValues().stream().anyMatch(v -> v.contains("notCreated")));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testViewCreatesHtmlPanelGroupWithCreateViewTrue() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5556,7 +5447,6 @@ class TabularComponentBuilderTest {
 		assertSame(panelGroup, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testViewUsesCreatedBindingWhenCreateViewTrue() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5577,7 +5467,6 @@ class TabularComponentBuilderTest {
 		assertTrue(expressionCaptor.getAllValues().stream().anyMatch(v -> v.contains("created")));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSpacerReturnsExistingComponentWhenNotNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5589,7 +5478,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSpacerCreatesSpacerComponentWithSizeWhenComponentNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5612,7 +5500,6 @@ class TabularComponentBuilderTest {
 		verify(spacerComponent).setId("spacer1");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testStaticImageReturnsExistingComponentWhenNotNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5624,7 +5511,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testStaticImageCreatesGraphicImageWithUrlWhenComponentNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5648,7 +5534,6 @@ class TabularComponentBuilderTest {
 		verify(graphicImage).setId("img1");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testStaticImageWithInvisibleConditionSetsRenderedExpression() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5672,7 +5557,6 @@ class TabularComponentBuilderTest {
 		verify(graphicImage).setValueExpression(eq("rendered"), any(ValueExpression.class));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDynamicImageReturnsExistingComponentWhenNotNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5684,7 +5568,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDynamicImageCreatesGraphicImageWithExpressionWhenComponentNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5709,7 +5592,6 @@ class TabularComponentBuilderTest {
 		verify(graphicImage).setId("dimg1");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDynamicImageWithNullDimensionsUsesNullLiterals() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5732,7 +5614,6 @@ class TabularComponentBuilderTest {
 		assertSame(graphicImage, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testMapWithQueryReturnsExistingComponentWhenNotNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5744,7 +5625,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testMapWithQueryCreatesMapDivAndScriptWhenComponentNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5776,7 +5656,6 @@ class TabularComponentBuilderTest {
 		assertSame(outerGroup, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testMapWithModelNameReturnsExistingComponentWhenNotNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5788,7 +5667,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testMapWithModelNameCreatesMapDivAndScriptWhenComponentNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5819,7 +5697,6 @@ class TabularComponentBuilderTest {
 		assertSame(outerGroup, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddDataGridActionColumnReturnsExistingComponentWhenNotNull() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5831,7 +5708,6 @@ class TabularComponentBuilderTest {
 		assertSame(component, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddDataGridActionColumnWithEditableGridAndZoomOnlyAddsColumn() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5871,7 +5747,6 @@ class TabularComponentBuilderTest {
 		assertSame(zoomBtn, colChildren.get(0));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddDataGridActionColumnWithAllButtonsAddsAddZoomRemoveButtons() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5923,7 +5798,6 @@ class TabularComponentBuilderTest {
 		assertSame(addBtn, headerChildren.get(0));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateDataTableFilterToggleReturnsButtonWithClickScript() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5941,7 +5815,6 @@ class TabularComponentBuilderTest {
 		verify(button).setOnclick("SKYVE.PF.toggleFilters('myTable'); return false;");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testReportButtonPublicOverloadReturnsExistingComponentWhenNotNull() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5968,7 +5841,6 @@ class TabularComponentBuilderTest {
 		}
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateDataGridAddButtonInlineSetsNamingcontainerUpdate() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -5987,7 +5859,6 @@ class TabularComponentBuilderTest {
 		verify(addBtn).setUpdate("@namingcontainer");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateDataGridAddButtonWithDisableAddConditionSetsDisabledExpression() {
 		DisableConditionTestBuilder builder = new DisableConditionTestBuilder();
@@ -6006,7 +5877,6 @@ class TabularComponentBuilderTest {
 		verify(addBtn).setValueExpression(eq("disabled"), same(builder.fakeExpression));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateDataGridRemoveButtonWithDisableRemoveConditionSetsDisabledExpression() {
 		DisableConditionTestBuilder builder = new DisableConditionTestBuilder();
@@ -6025,7 +5895,6 @@ class TabularComponentBuilderTest {
 		verify(removeBtn).setValueExpression(eq("disabled"), same(builder.fakeExpression));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateDataGridZoomButtonWithDisableZoomConditionSetsDisabledExpression() {
 		DisableConditionTestBuilder builder = new DisableConditionTestBuilder();
@@ -6044,7 +5913,6 @@ class TabularComponentBuilderTest {
 		verify(zoomBtn).setValueExpression(eq("disabled"), same(builder.fakeExpression));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testGeometryNonShortcutPathCreatesGridWithTextFieldAndMap() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6094,7 +5962,6 @@ class TabularComponentBuilderTest {
 		assertSame(overlay, gridChildren.get(2));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testGeometryMapNonShortcutPathCreatesMapDivWithHiddenAndScript() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6132,7 +5999,6 @@ class TabularComponentBuilderTest {
 		assertSame(script, outerChildren.get(2));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testGeometryShortCircuitReturnsExistingComponent() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6146,7 +6012,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testGeometryMapShortCircuitReturnsExistingComponent() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6160,7 +6025,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateSpecialColumnFilterFacetComponentForConstantDomainCreatesSelectOneMenu() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6191,7 +6055,6 @@ class TabularComponentBuilderTest {
 		assertSame(items, children.get(0));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateSpecialColumnFilterFacetComponentForBooleanCreatesTriStateCheckbox() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6212,7 +6075,6 @@ class TabularComponentBuilderTest {
 		verify(checkbox).setOnchange("PF('tableWidget').filter()");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCreateSpecialColumnFilterFacetComponentForNonSpecialTypeReturnsNull() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6226,7 +6088,6 @@ class TabularComponentBuilderTest {
 		assertNull(result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testReportShortCircuitReturnsExistingComponent() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6235,7 +6096,6 @@ class TabularComponentBuilderTest {
 		assertSame(component, builder.report(component, "label", "icon", "tip", null, action));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDownloadShortCircuitReturnsExistingComponent() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6244,7 +6104,6 @@ class TabularComponentBuilderTest {
 		assertSame(component, builder.download(component, null, null, "label", "icon", "tip", null, action));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testUploadShortCircuitReturnsExistingComponent() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6253,7 +6112,6 @@ class TabularComponentBuilderTest {
 		assertSame(component, builder.upload(component, "label", "icon", "tip", null, action));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testRemoveShortCircuitReturnsExistingComponent() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6262,7 +6120,6 @@ class TabularComponentBuilderTest {
 		assertSame(component, builder.remove(component, "label", "icon", "tip", null, action, false));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionShortCircuitReturnsExistingComponent() {
 		TabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6271,7 +6128,6 @@ class TabularComponentBuilderTest {
 		assertSame(component, builder.action(component, null, null, "label", "icon", "tip", null, null, action));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testUploadDelegatesToUploadButton() {
 		CapturingDelegationBuilder builder = new CapturingDelegationBuilder();
@@ -6286,7 +6142,6 @@ class TabularComponentBuilderTest {
 		assertEquals("doUpload", builder.uploadActionName);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTextWithDateConverterUsesDatePicker() {
 		// Test that the datePicker branch is triggered for all date/time converter types.
@@ -6350,7 +6205,6 @@ class TabularComponentBuilderTest {
 		}
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testTextWithUnknownDateConverterThrowsIllegalState() {
 		// When a date converter is used but has no matching if-branch, datePicker throws IllegalStateException.
@@ -6378,7 +6232,6 @@ class TabularComponentBuilderTest {
 						skyveDateConverter, null, unknownFacesConverter));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDetermineActionFacesAttributesEmptyList() {
 		ComponentBuilder.ActionFacesAttributes result =
@@ -6388,7 +6241,6 @@ class TabularComponentBuilderTest {
 		assertNull(result.update);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDetermineActionFacesAttributesWithServerSideAction() {
 		org.skyve.impl.metadata.view.event.ServerSideActionEventAction serverAction =
@@ -6401,7 +6253,6 @@ class TabularComponentBuilderTest {
 		assertEquals("MyAction", result.actionName);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDetermineActionFacesAttributesWithRerenderValidateTrue() {
 		org.skyve.impl.metadata.view.event.RerenderEventAction rerender =
@@ -6414,7 +6265,6 @@ class TabularComponentBuilderTest {
 		assertEquals("true", result.actionName);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDetermineActionFacesAttributesWithRerenderValidateFalse() {
 		org.skyve.impl.metadata.view.event.RerenderEventAction rerender =
@@ -6427,7 +6277,6 @@ class TabularComponentBuilderTest {
 		assertEquals("false", result.actionName);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDetermineActionFacesAttributesWithProcessAndUpdateOverrides() {
 		org.skyve.impl.metadata.view.event.ServerSideActionEventAction serverAction =
@@ -6444,7 +6293,6 @@ class TabularComponentBuilderTest {
 		assertEquals("@form", result.update);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddAjaxBehaviorWithRerenderActionValidateTrue() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6467,7 +6315,6 @@ class TabularComponentBuilderTest {
 		verify(component).addClientBehavior(eq("change"), same(ajax));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddAjaxBehaviorWithRerenderActionValidateFalse() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6490,7 +6337,6 @@ class TabularComponentBuilderTest {
 		verify(component).addClientBehavior(eq("change"), same(ajax));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAddAjaxBehaviorWithServerSideAction() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6513,7 +6359,6 @@ class TabularComponentBuilderTest {
 		verify(component).addClientBehavior(eq("change"), same(ajax));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testOutputLinkWithNullDataWidgetVarAndNullTarget() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6526,7 +6371,6 @@ class TabularComponentBuilderTest {
 		assertSame(link, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testOutputLinkWithDataWidgetVarAddsValueExpression() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6540,7 +6384,6 @@ class TabularComponentBuilderTest {
 		verify(link).setValueExpression(eq("value"), any());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testOutputLinkWithValueAddsChildText() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6562,7 +6405,6 @@ class TabularComponentBuilderTest {
 		assertFalse(outputText.isEscape());
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testOutputLinkWithBlankFrameTarget() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6580,7 +6422,6 @@ class TabularComponentBuilderTest {
 		verify(link).setTarget("_blank");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testOutputLinkWithNamedFrameTarget() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6599,7 +6440,6 @@ class TabularComponentBuilderTest {
 		verify(link).setTarget("myFrame");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testColourPickerShortcutReturnsExistingComponent() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6609,7 +6449,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testPasswordShortcutReturnsExistingComponent() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6620,7 +6459,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testDataListCreatesAndConfigures() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6637,7 +6475,6 @@ class TabularComponentBuilderTest {
 		verify(dataListComponent).setVar("row");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testAccordionPanelCreatesComponent() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6653,7 +6490,6 @@ class TabularComponentBuilderTest {
 		assertSame(accordionComponent, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSliderVerticalConfiguresVerticalSlider() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6692,7 +6528,6 @@ class TabularComponentBuilderTest {
 		assertTrue(children.contains(spacer));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSliderNoDiscreteValuesUsesStepOfOne() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6724,7 +6559,6 @@ class TabularComponentBuilderTest {
 		verify(sliderComponent).setStep(1.0);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionButtonWithDeleteAndNoConfirmationUsesDefault() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6752,7 +6586,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setValue(null);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionButtonWithCancelSetsModeAndOnclick() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6777,7 +6610,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setOnclick("SKYVE.PF.popHistory(true)");
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionButtonWithRemoveAndNoConfirmationUsesDefault() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6803,7 +6635,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setValue(null);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionButtonWithZoomOutAndInvisibleSetsInvisible() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6827,7 +6658,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setValue(null);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testActionButtonWithSaveAndNullInvisibleSetsRenderedExpression() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6851,7 +6681,6 @@ class TabularComponentBuilderTest {
 		verify(commandButton).setValueExpression(eq("rendered"), any(ValueExpression.class));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSetValueOrValueExpressionWithNullDoesNothing() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6861,7 +6690,6 @@ class TabularComponentBuilderTest {
 		assertFalse(called[0]);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSetValueOrValueExpressionWithSimpleValueCallsSetter() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6871,7 +6699,6 @@ class TabularComponentBuilderTest {
 		assertEquals("hello", captured[0]);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testSetValueOrValueExpressionWithBindingExpressionSetsValueExpression() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6883,7 +6710,6 @@ class TabularComponentBuilderTest {
 		verify(component).setValueExpression(eq("title"), any(ValueExpression.class));
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testCheckboxShortcutReturnsExisting() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6893,7 +6719,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testMapShortcutReturnsExisting() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6903,7 +6728,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testBlurbShortcutReturnsExisting() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6913,7 +6737,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testLabelBindingShortcutReturnsExisting() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6923,7 +6746,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testGeometryShortcutReturnsExisting() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
@@ -6933,7 +6755,6 @@ class TabularComponentBuilderTest {
 		assertSame(existing, result);
 	}
 
-	@SuppressWarnings("static-method")
 	@Test
 	void testListMembershipShortcutReturnsExisting() {
 		NoOpTabularComponentBuilder builder = new NoOpTabularComponentBuilder();
