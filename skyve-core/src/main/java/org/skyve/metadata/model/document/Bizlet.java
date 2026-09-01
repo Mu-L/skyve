@@ -225,7 +225,7 @@ public class Bizlet<T extends Bean> implements MetaData {
 	 * @return the meta-data bizlet's completions or null.
 	 */
 	public @Nullable List<String> complete(@Nonnull String attributeName,
-											@Nonnull String value,
+											@Nullable String value,
 											@Nullable T bean) throws Exception {
 		// Execute the metaDataBizlet if one exists
 		if (metaDataBizlet != null) {
