@@ -235,7 +235,7 @@ public class ContentServlet extends AbstractResourceServlet {
 	 * @param binding          the attribute binding from the request
 	 * @param resourceFileName the content UUID
 	 * @param user             the authenticated user, or {@code null} if not logged in
-	 * @param uxui             the UX/UI name for access checking
+	 * @param uxui             the UX/UI name for access checking; must not be {@code null}
 	 * @throws SecurityException if the user is not authorised to access the content
 	 */
 	@Override
@@ -245,7 +245,7 @@ public class ContentServlet extends AbstractResourceServlet {
 									@Nullable String binding,
 									@Nullable String resourceFileName,
 									@Nullable User user,
-									@Nullable String uxui)
+									@Nonnull String uxui)
 	throws SecurityException {
 		ContentResource contentResource = (ContentResource) resource;
 		if (contentResource.content == null) {
@@ -274,8 +274,7 @@ public class ContentServlet extends AbstractResourceServlet {
 		// Check that the user has access - use the full binding here
 		// NB If you can text search you should already be able to see anything you have access to
 		if (! user.canTextSearch()) {
-			String uxuiName = (uxui == null) ? org.skyve.metadata.router.UxUi.DESKTOP_NAME : uxui;
-			EXT.checkAccess(user, UserAccess.content(moduleName, documentName, binding), uxuiName);
+			EXT.checkAccess(user, UserAccess.content(moduleName, documentName, binding), uxui);
 		}
 
 		// Check that user has content access - Use the content module and document and the target attribute name

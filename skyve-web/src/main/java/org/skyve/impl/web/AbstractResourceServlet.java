@@ -549,7 +549,7 @@ public abstract class AbstractResourceServlet extends HttpServlet {
 	 * @param binding			The binding in the request - can be null.
 	 * @param resourceFileName	The file/content identifier - can be null.
 	 * @param user				The logged in user or null if not logged in.
-	 * @param uxui				UxUi name for access checking.
+	 * @param uxui				UxUi name for access checking - never null.
 	 * @throws SecurityException
 	 */
 	protected void secureResource(@Nonnull Resource resource,
@@ -558,7 +558,7 @@ public abstract class AbstractResourceServlet extends HttpServlet {
 									@Nullable String binding,
 									@Nullable String resourceFileName,
 									@Nullable User user,
-									@Nullable String uxui)
+									@Nonnull String uxui)
 	throws SecurityException {
 		// no-op by default; override to add access control
 	}

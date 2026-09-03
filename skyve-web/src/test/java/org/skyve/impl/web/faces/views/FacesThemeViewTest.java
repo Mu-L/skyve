@@ -42,7 +42,9 @@ class FacesThemeViewTest {
 
 	@Test
 	void resolvesTemplateAndColourFallbacks() {
-		FacesThemeView missing = viewFor(UxUi.newPrimeFaces("tablet", null, "exact-theme", null));
+		UxUi incomplete = UxUi.newPrimeFaces("tablet", "editorial", "exact-theme");
+		incomplete.setPfTemplateName(null);
+		FacesThemeView missing = viewFor(incomplete);
 
 		assertAll(
 				() -> assertEquals("external", missing.getTemplateName()),
@@ -64,9 +66,10 @@ class FacesThemeViewTest {
 
 	@Test
 	void readsConfiguredComponentThemeDirectlyFromSelectedUxUi() {
-		FacesThemeView exact = viewFor(
-				UxUi.newPrimeFaces("tablet", "external", " vendor-theme-padded ", "blue"));
-		FacesThemeView absent = viewFor(UxUi.newPrimeFaces("tablet", "external", null, "blue"));
+		FacesThemeView exact = viewFor(UxUi.newPrimeFaces("tablet", "external", " vendor-theme-padded ", "blue"));
+		UxUi withoutComponentTheme = UxUi.newPrimeFaces("tablet", "external", "skyve", "blue");
+		withoutComponentTheme.setPfThemeName(null);
+		FacesThemeView absent = viewFor(withoutComponentTheme);
 		FacesThemeView smartClient = viewFor(
 				UxUi.newSmartClient("desktop", "Tahoe", "casablanca", "smartclient"));
 
